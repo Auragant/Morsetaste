@@ -1,0 +1,80 @@
+# Prüfstand
+
+## Security-Prüfungen – 03.10.2026
+
+- GitHub-[Security-Prüfungen](https://github.com/Auragant/Morsetaste/actions/workflows/security.yml)
+  erfolgreich: Cppcheck **2.13.0** auf Windows-Code und tatsächlichem Sketch
+  über den Teststub; keine Befunde in den aktivierten Kategorien.
+- Gitleaks **8.30.1**, verpflichtend SHA-256-geprüft: gesamte ausgecheckte
+  Historie, **keine gefundenen Zugangsdaten**.
+- **73 Kerncode- und 37 Firmwareprüfungen** zusätzlich unter Linux mit
+  AddressSanitizer/UndefinedBehaviorSanitizer erfolgreich.
+- **11 Benachrichtigungs-Szenarien** prüfen den echten Workflow-Scriptblock
+  ohne Netzwerk: Neuanlage, Zuweisung/Erwähnung, Wiederholungsfehler, Auflösung,
+  abgebrochene/übersprungene und veraltete Läufe, fremde Issues/PRs sowie Testmodus.
+  Lokal ausführbar mit `node tests/security_notify_tests.cjs`.
+- Manueller Zustelltest ebenfalls grün: `github-actions[bot]` hat ein
+  eindeutig gekennzeichnetes Test-Issue erstellt, `Auragant` zugewiesen und
+  erwähnt. Das ist **kein Sicherheitsbefund**.
+  Tatsächlichen Empfang der GitHub-Benachrichtigung hat der Eigentümer am
+  03.10.2026 bestätigt; der konkrete Zustellkanal wurde nicht gesondert angegeben.
+- Windows- und Nano-Build erneut erfolgreich: **2.466 Byte Flash / 204 Byte RAM**;
+  GUI-Test mit echtem Demo-Worker, Pause/Fortsetzen und vollständigem Beenden
+  wieder erfolgreich, ohne COM-Zugriffe oder echte Tastatureingaben.
+- Neuer Paketbau lokal geprüft: GPL-/Fremdlizenzen, Disclaimer, Core-/Variant-
+  Quellen, Plattformdefinitionen, Buildskripte und Binärdateien vorhanden;
+  keine Toolprogramme, Git-Historie, Treiber oder Bootloader eingebettet.
+  Das vollständige Quellen-/Binärpaket wird als `MorseBridge-1.1.0p-win64.zip` angeboten.
+
+Keine Urheberrechts-/Patentprüfung durch diese Scanner und keine Garantie für
+Sicherheit, Fehlerfreiheit oder vollständige Lizenzkonformität.
+
+## Version 1.1.0p – 03.10.2026
+
+- Windows-EXE 1.1.0p und Nano-Firmware erfolgreich gebaut.
+- **73 Protokoll-/Ausgabeprüfungen + 37 Firmware-Prüfungen bestanden**.
+  Die neuen Fälle prüfen Pinbelegung, stummen Start, offenen/fehlenden Schalter,
+  Freigabe ohne Morse-Kontakt, getrennte Entprellung, Schalterprellen parallel
+  zu Morseereignissen, Ein/Aus während eines gehaltenen Impulses, Heartbeat,
+  Start mit bereits geschlossenen Kontakten und `millis()`-Überlauf.
+- Der aktive Summer wird als digitaler Ausgang geprüft; es wird kein
+  `tone()`/PWM verwendet. Serielle Tastenzustände bleiben unabhängig vom Schalter.
+- Echter Nano-AVR-Build: **2.466 Byte Flash, 204 Byte RAM**,
+  FQBN `arduino:avr:nano:cpu=atmega328`, Arduino AVR Boards 1.8.8.
+- GUI-/Hintergrundthread-Test erneut bestanden: Darstellung, COM-Auswahl,
+  Pause/Fortsetzen, Schließen und vollständiges Beenden. Vorschau visuell geprüft.
+- EXE-Datei-/Produktversion `1.1.0p`, numerische Windows-Version `1.1.0.1`;
+  weiterhin nur Windows-System-DLLs erforderlich.
+- Praxistest der Nano-/Junker-/TMB12A05-Kette samt Transistorstufe und des
+  konkreten Zielprogramms vom Eigentümer am 03.10.2026 erfolgreich bestätigt.
+  Dieser berichtete Test ist keine unabhängige elektrische Zertifizierung.
+
+## Basisstand 1.0.0 – 01.10.2026
+
+- Windows-x64-EXE mit GCC 16.2.0 / w64devkit 2.10.0 gebaut.
+  C++17, `-Wall -Wextra -Wpedantic -Werror`, statische C++-Laufzeit.
+- Abhängigkeiten geprüft: ausschließlich Windows-System-DLLs
+  (ADVAPI32, COMCTL32, GDI32, GDI+, KERNEL32, msvcrt, SETUPAPI,
+  SHELL32, USER32, WTSAPI32). Kein separates Runtime-Paket nötig.
+- **73 erfolgreiche Protokoll-/Ausgabeprüfungen**: Fragmentierung an jeder
+  Paketgrenze, ungültige/überlange Zeilen, mehrere schnelle Pulse in einem
+  Lesepaket, Heartbeat ohne Key-repeat, Erstverbindung bei gedrückter Taste,
+  1-s-Timeout, längeres Halten mit Heartbeat, Wiederverbindung, Pause,
+  Fokus-/Sperrzustand und Rückmeldungen einer fehlgeschlagenen Eingabe.
+- **12 erfolgreiche Firmware-Prüfungen**: Der tatsächliche `.ino`-Sketch
+  wurde gegen simulierte Arduino-I/O gebaut und mit Kontaktprellen,
+  Kurzimpulsen, Heartbeat, LED und `millis()`-Überlauf geprüft.
+- Echter AVR-Build mit Arduino AVR Boards **1.8.8** und AVR-GCC
+  **7.3.0-atmel3.6.1-arduino7**, FQBN `arduino:avr:nano:cpu=atmega328`:
+  **2.272 Byte Flash, 198 Byte RAM**. Vier Compilerwarnungen stammen aus
+  unbenutzten Parametern von `cores/arduino/new.cpp`, nicht aus dem Sketch.
+- GUI-Zustände Suche, gedrückt und Pause als PNG gerendert und visuell geprüft.
+  Die Bilder sind ausdrücklich Vorschauen mit simulierten Daten.
+- GUI-Test prüft außerdem die COM-Auswahl, startet den echten Hintergrundthread
+  im Demo-Modus, pausiert und aktiviert ihn über die normalen Fensterbefehle und
+  beendet ihn über die Schließen-Schaltfläche. Exitcode **0**, kein verbleibender
+  Worker. Dieser Test öffnet keine seriellen Ports und sendet keine Tastendrücke.
+
+Die reinen Zustandstests ersetzen keine Hardware-/Integrationstests.
+Für den aktuellen Stand wurde ein erfolgreicher Praxistest des konkreten
+Aufbaus vom Eigentümer bestätigt (siehe Abschnitt 1.1.0p).

@@ -1,0 +1,53 @@
+MORSEBRIDGE 1.1.0p – JUNKER M.T. / ARDUINO NANO / WINDOWS
+
+1. ANSCHLIESSEN
+   Beide potentialfreien Schaltkontakte der Junker an D2 und GND des Nano.
+   Die Morsetaste dabei von Sender/Funkgerät und fremden Spannungen trennen.
+   Nano per USB-Datenkabel an den PC anschließen.
+
+2. NANO PROGRAMMIEREN
+   firmware/JunkerSpace/JunkerSpace.ino in der Arduino IDE öffnen.
+   Board: Arduino Nano
+   Prozessor: ATmega328P
+   Falls der Upload scheitert: ATmega328P (Old Bootloader) versuchen.
+   Passenden COM-Port wählen und Sketch hochladen.
+   Danach den seriellen Monitor schließen.
+
+3. WINDOWS-PROGRAMM STARTEN
+   dist/MorseBridge.exe starten. Keine Installation nötig.
+   Auf „Nano verbunden · COM…“ warten.
+   Morsetaste loslassen, dann das gewünschte Zielprogramm anklicken.
+   Morsetaste drücken hält Space; Loslassen gibt Space frei.
+
+OPTIONALER SUMMER (AKTIV, Z. B. TMB12A05)
+   Ein/Aus-Schalter zwischen D4 und GND: geschlossen = Mithörton freigegeben.
+   Der Ton erklingt dann nur bei gedrückter Junker-Taste.
+   Offen oder kein Schalter = stumm. Die Space-Funktion bleibt immer erhalten.
+   D8 steuert den Summer über einen BC337 mit 1-kOhm-Basiswiderstand,
+   10-kOhm-Basis-Pulldown und Schutzdiode. Versorgung aus 5V, nicht aus D8!
+   Genaue Verdrahtung: docs/SUMMER.md.
+   Die PC-Pause beeinflusst den lokalen Ton nicht; zum Stummschalten D4 öffnen.
+
+BEDIENUNG
+   Das Programm funktioniert im Hintergrund und minimiert.
+   „Immer im Vordergrund“ hält die Anzeige über dem Zielfenster sichtbar.
+   Strg + Alt + F12 oder die Pause-Schaltfläche pausiert/setzt die Ausgabe fort.
+   Im eigenen MorseBridge-Fenster wird nur der Kontakt angezeigt.
+   Nach Fortsetzen oder einem Fensterwechsel während des Tastens zuerst loslassen.
+   X oder „Schließen“ gibt Space frei und beendet das Programm vollständig.
+
+OHNE NANO AUSPROBIEREN
+   Aus dem Projektordner in PowerShell:
+   ./dist/MorseBridge.exe --demo
+   Die Demo zeigt ein simuliertes SOS und erzeugt keine echten Tastendrücke.
+
+ZUM ERNEUTEN HOCHLADEN
+   MorseBridge schließen. Pause allein gibt den COM-Port nicht frei.
+
+Weitere Hinweise, Fehlerbehebung und Build-Befehle stehen in README.md.
+LLM/KI-unterstützt erstellt. Experimentelles Hobbyprojekt, keine
+sicherheitskritische Verwendung. Vollständiger Hinweis: DISCLAIMER.md.
+Eigener Code: GPLv3 (LICENSE). Fremdlizenzen: THIRD_PARTY_NOTICES.md / licenses/.
+Repository: https://github.com/Auragant/Morsetaste
+EXE, Firmware und Tests wurden gebaut/geprüft. Der Eigentümer hat den
+Praxistest seiner Junker/Nano/Summer-Kombination mit dem Zielprogramm bestätigt.

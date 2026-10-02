@@ -1,0 +1,16 @@
+* text=auto
+*.cpp text eol=lf
+*.hpp text eol=lf
+*.h text eol=lf
+*.ino text eol=lf
+*.md text eol=lf
+*.ps1 text eol=lf
+*.cjs text eol=lf
+*.yml text eol=lf
+*.rc text eol=lf
+*.manifest text eol=lf
+*.txt text eol=lf
+LICENSE text eol=lf
+*.png binary
+*.exe binary
+*.zip binary

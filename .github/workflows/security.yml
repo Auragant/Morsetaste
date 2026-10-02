@@ -1,0 +1,147 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: Security checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      test_notification:
+        description: 'Test-Issue zur Prüfung der GitHub-Benachrichtigung erstellen'
+        type: boolean
+        default: false
+
+# Scanners and pull requests never receive an issue-write token.
+permissions:
+  contents: read
+
+jobs:
+  cppcheck:
+    name: C++ static analysis
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Cppcheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends cppcheck
+      - name: Check Win32 code and the actual sketch through its I/O stub
+        run: |
+          cppcheck --version
+          cppcheck --std=c++17 --platform=win64 --library=windows \
+            --enable=warning,performance,portability --error-exitcode=1 \
+            --suppress=missingIncludeSystem -DUNICODE -D_UNICODE \
+            -D_WIN32_WINNT=0x0A00 -Itests/arduino_stub \
+            windows/main.cpp tests/core_tests.cpp tests/firmware_tests.cpp
+
+  secrets:
+    name: Secrets in complete Git history
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install pinned Gitleaks with mandatory SHA-256 verification
+        env:
+          SCANNER_DIR: ${{ runner.temp }}/morsebridge-gitleaks
+        run: |
+          mkdir -p "$SCANNER_DIR"
+          cd "$SCANNER_DIR"
+          curl --fail --location --retry 3 --output gitleaks.tar.gz \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz' | sha256sum --check --strict
+          tar -xzf gitleaks.tar.gz gitleaks
+      - name: Scan commits without printing secret values
+        env:
+          SCANNER_DIR: ${{ runner.temp }}/morsebridge-gitleaks
+        run: |
+          "$SCANNER_DIR/gitleaks" git --redact=100 --no-banner --log-opts='--all' .
+
+  tests:
+    name: Protocol and firmware tests with sanitizers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Compile and run shared production-code tests
+        run: |
+          mkdir -p build
+          g++ -std=c++17 -Wall -Wextra -Wpedantic -Werror -g \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            tests/core_tests.cpp -o build/core_tests
+          g++ -std=c++17 -Wall -Wextra -Wpedantic -Werror -g \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            -Itests/arduino_stub tests/firmware_tests.cpp -o build/firmware_tests
+          ./build/core_tests
+          ./build/firmware_tests
+          node tests/security_notify_tests.cjs
+
+  notify:
+    name: Notify repository owner on failure
+    needs: [cppcheck, secrets, tests]
+    # Never execute privileged notification code from a PR or non-default ref.
+    if: >-
+      always() && github.event_name != 'pull_request' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    concurrency:
+      group: security-notifications
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Create/update an assigned issue, or resolve it after a clean run
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          CHECK_RESULTS: ${{ toJSON(needs) }}
+          TEST_NOTIFICATION: ${{ inputs.test_notification || false }}
+        with:
+          script: |
+            const repo = context.repo;
+            const marker = '<!-- morsebridge-security-monitor:v1 -->';
+            const runUrl = `${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${context.runId}`;
+            const results = JSON.parse(process.env.CHECK_RESULTS);
+            const failed = Object.entries(results).filter(([, v]) => v.result === 'failure').map(([k]) => k);
+            const clean = Object.values(results).length === 3 && Object.values(results).every(v => v.result === 'success');
+            const test = process.env.TEST_NOTIFICATION === 'true';
+            if (test) {
+              const {data} = await github.rest.issues.create({
+                ...repo, title: '[TEST] GitHub-Security-Benachrichtigung', assignees: [repo.owner],
+                body: `@${repo.owner}: Dies ist nur ein Benachrichtigungstest, kein Sicherheitsbefund.\n\n[Prüflauf](${runUrl})\n\nNach Empfang kann dieses Test-Issue geschlossen werden.`
+              });
+              core.notice(`Test-Issue: ${data.html_url}`);
+            }
+            // An older overlapping run must not close/create an issue for newer code.
+            const {data: branch} = await github.rest.repos.getBranch({...repo, branch: context.payload.repository.default_branch});
+            if (branch.commit.sha !== context.sha) {
+              core.notice('Veralteter Prüflauf: Issue-Status bleibt unverändert.');
+              return;
+            }
+            // Partial/cancelled runs must not resolve outstanding findings.
+            if (!failed.length && !clean) return;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {...repo, state: 'open', per_page: 100});
+            const existing = issues.find(i => !i.pull_request && i.user?.type === 'Bot' && i.body?.includes(marker));
+            if (failed.length) {
+              const body = `${marker}\n@${repo.owner}: Der Security-Prüflauf ist fehlgeschlagen.\n\nBetroffene Prüfungen: **${failed.join(', ')}**.\n\n[Details im GitHub-Actions-Prüflauf](${runUrl}). Ein Fehler kann ein Befund oder ein Tool-/Infrastrukturproblem sein; bitte die Logs prüfen.\n\nKeine Zugangsdaten oder detaillierten Exploit-Informationen in dieses Issue kopieren. Ein vollständig grüner Folgeprüflauf schließt es automatisch.`;
+              if (existing) {
+                await github.rest.issues.createComment({...repo, issue_number: existing.number, body});
+              } else {
+                await github.rest.issues.create({...repo, title: '[Security] Prüflauf benötigt Aufmerksamkeit', body, assignees: [repo.owner]});
+              }
+            } else if (existing) {
+              await github.rest.issues.createComment({...repo, issue_number: existing.number, body: `Alle drei Prüfungen sind wieder erfolgreich: [Prüflauf](${runUrl}). Das ist keine Garantie für Fehlerfreiheit.`});
+              await github.rest.issues.update({...repo, issue_number: existing.number, state: 'closed', state_reason: 'completed'});
+            }

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-3.0-only
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    assignees:
+      - Auragant
+    open-pull-requests-limit: 5
