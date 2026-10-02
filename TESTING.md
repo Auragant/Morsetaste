@@ -2,6 +2,18 @@
 
 ## Security-Prüfungen – 03.10.2026
 
+- Öffentlicher Quellstand: ausschließlich Alias-/GitHub-Noreply-Metadaten.
+  Quellen, EXE, HEX, Vorschau und das entpackte Release-Inventar wurden
+  auf bekannte persönliche Angaben des Eigentümers geprüft: keine gefunden.
+  Notwendige fremde Copyright-/Lizenzhinweise bleiben erhalten.
+- Alle vier Jobs des eigenen Security-
+  Workflows erfolgreich; Private vulnerability reporting per API aktiviert
+  und mit `enabled: true` bestätigt. Secret Scanning und Push Protection aktiv.
+  CodeQL-Default-Setup mit erweiterter Abfragesuite zusätzlich eingerichtet.
+- Erster CodeQL-Lauf für C/C++, JavaScript/TypeScript und Actions erfolgreich.
+  Ein `js/code-injection`-Hinweis im lokalen Test wurde im tatsächlichen
+  Vertrauenskontext geprüft und als Fehlalarm eingeordnet; Begründung und
+  Grenzen stehen in `SECURITY.md`. Kein Scanner-/Regelausschluss eingerichtet.
 - GitHub-[Security-Prüfungen](https://github.com/Auragant/Morsetaste/actions/workflows/security.yml)
   erfolgreich: Cppcheck **2.13.0** auf Windows-Code und tatsächlichem Sketch
   über den Teststub; keine Befunde in den aktivierten Kategorien.

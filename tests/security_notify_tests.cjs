@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Test the exact privileged script embedded in the workflow, without network calls.
+// Only run a trusted checkout: node:vm is a test context, NOT a security sandbox.
+// The fixed repository workflow is intentionally executable source, like this test.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');

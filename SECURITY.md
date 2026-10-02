@@ -21,6 +21,12 @@ Security-Abonnement eingerichtet und kein Ausgabenlimit geändert.
   Sicherheitswarnungen und automatische Sicherheitsupdates sind aktiviert.
   Manuell heruntergeladene Compiler, Arduino-Core und Gitleaks werden dadurch
   **nicht** automatisch auf alle bekannten Schwachstellen geprüft/aktualisiert.
+- GitHubs natives CodeQL: Default-Setup mit erweiterter Abfragesuite für C/C++,
+  JavaScript/TypeScript und GitHub Actions; lokale und entfernte Eingabequellen.
+  Das ist eine zusätzliche Analyse, kein Ersatz für einen Windows-/AVR-Build.
+- GitHubs natives Secret Scanning und Push Protection sind aktiviert. Diese
+  prüfen unterstützte Geheimnismuster und bieten keinen vollständigen Schutz
+  vor der Veröffentlichung persönlicher Angaben.
 
 Actions sind an vollständige Commit-SHAs gebunden; der Gitleaks-Download muss
 seinen fest hinterlegten SHA-256 erfüllen. Prüfjobs erhalten nur lesende
@@ -28,11 +34,31 @@ Repository-Rechte und keine dauerhaft gespeicherten Git-Zugangsdaten. Nur der
 getrennte Benachrichtigungsjob darf Issues schreiben; er checkt keinen Code aus
 und läuft nicht für Pull Requests oder andere Branches als den Default-Branch.
 
-Die Ergebnisse dieses Workflows stehen unter **Actions**. Cppcheck ist kein
-CodeQL-Scan und lädt keine CodeQL-Alerts in den Security-Tab hoch. Für öffentliche
-Repositories ist zusätzlich natives CodeQL und Secret Scanning verfügbar;
-der Aktivierungsstatus wird in der Veröffentlichungs-Checkliste dokumentiert.
+Die Ergebnisse des eigenen Workflows stehen unter **Actions**. Die zusätzlichen
+nativen CodeQL-/Secret-Scanning-Ergebnisse stehen unter **Security**. Cppcheck
+ist kein CodeQL-Scan und lädt selbst keine CodeQL-Alerts in den Security-Tab hoch.
+Der Aktivierungsstatus wird in der Veröffentlichungs-Checkliste dokumentiert.
 Quelle: [GitHub: Verfügbarkeit von Code Scanning](https://docs.github.com/en/code-security/concepts/code-scanning/code-scanning).
+
+### Einordnung des ersten CodeQL-Hinweises
+
+Am 03.10.2026 meldete CodeQL `js/code-injection` im lokalen
+`tests/security_notify_tests.cjs`. Der Test liest ausschließlich den festen Pfad
+`.github/workflows/security.yml` aus demselben Checkout und führt dessen
+Benachrichtigungs-Script absichtlich mit simulierten GitHub-Objekten aus. Es
+gibt keinen Netzwerkdienst, frei wählbaren Dateipfad oder externen Eingabewert.
+Wer diesen Repository-Code verändern kann, kann bereits den Test oder Workflow
+selbst verändern. Hier wird keine zusätzliche Vertrauensgrenze überschritten.
+Der Hinweis wird deshalb mit dieser Begründung als **Fehlalarm** eingeordnet,
+nicht durch Ausschluss des Tests oder Abschalten der Regel unterdrückt.
+
+`node:vm` ist ausdrücklich **keine Sicherheits-Sandbox**. Lokale Tests nur aus
+einem vertrauenswürdigen Checkout ausführen. Der GitHub-Testjob hat keine Secrets,
+keine Issues-Schreibrechte und checkt ohne persistierte Zugangsdaten aus; der
+separate privilegierte Benachrichtigungsjob führt diesen Test nicht aus.
+Diese Einordnung gilt nicht für spätere Erweiterungen um fremde Eingaben.
+[CodeQL: Code injection](https://codeql.github.com/codeql-query-help/javascript/js-code-injection/),
+[Node.js: Grenzen von node:vm](https://nodejs.org/api/vm.html).
 
 ## Benachrichtigungen
 
@@ -55,7 +81,9 @@ für **Participating, @mentions and custom** mindestens **On GitHub** und für
 E-Mail zusätzlich **Email** einschalten und eine verifizierte Adresse verwenden.
 Dependabot-Warnungen haben dort eigene Einstellungen; Actions-Meldungen können
 zusätzlich auf fehlgeschlagene Läufe beschränkt werden. Das Repository darf
-nicht auf **Ignore** stehen. Die persönlichen E-Mail-/Push-Einstellungen werden
+nicht auf **Ignore** stehen. Für die zusätzlichen nativen CodeQL-/Secret-
+Scanning-Warnungen auch die Security-Benachrichtigungen auf GitHub beachten.
+Die persönlichen E-Mail-/Push-Einstellungen werden
 von diesem Repository nicht verändert und eine E-Mail-Zustellung ist nicht
 garantiert.
 Quelle: [GitHub: Benachrichtigungen konfigurieren](https://docs.github.com/en/subscriptions-and-notifications/get-started/configuring-notifications).
@@ -64,9 +92,10 @@ Quelle: [GitHub: Benachrichtigungen konfigurieren](https://docs.github.com/en/su
 
 Nicht sensible Fehler können als GitHub-Issue gemeldet werden. Zugangsdaten,
 personenbezogene Daten und noch nicht behobene ausnutzbare Schwachstellen nicht
-in öffentliche Issues oder Workflow-Logs schreiben. Für vertrauliche Meldungen
-ist **Private vulnerability reporting** vorgesehen: Nach dessen Aktivierung
-unter **Security → Report a vulnerability** melden. Den geprüften
+in öffentliche Issues oder Workflow-Logs schreiben. **Private vulnerability
+reporting** ist aktiviert. Vertrauliche Meldungen über
+[Security → Report a vulnerability](https://github.com/Auragant/Morsetaste/security/advisories/new)
+senden; dazu ist eine GitHub-Anmeldung erforderlich. Den geprüften
 Aktivierungsstatus dokumentiert die [Veröffentlichungs-Checkliste](docs/PUBLICATION_REVIEW.md).
 Es wird keine persönliche Kontaktadresse des Projektverantwortlichen veröffentlicht.
 

@@ -101,11 +101,15 @@ gelten Meldepflichten seit 11.09.2026, die wesentlichen übrigen Pflichten ab
 - [x] Neuen Paketbau lokal mit Binärdateien, Core-Quellen und Lizenztexten geprüft.
 - [x] Geprüften Komplettrelease aus dem zugehörigen Quellstand als `v1.1.0p` angelegt.
 - [x] Veröffentlichung ausschließlich unter dem Alias Auragant beauftragt.
+- [x] Bereinigte Quellen, Binärdateien und Komplettpaket ohne gefundene persönliche Angaben des Eigentümers geprüft.
+- [x] Eigene Git-Commits und Tag-Metadaten ausschließlich Auragant/GitHub-Noreply.
 - [x] GitHub-Security-Lauf erfolgreich; Test-Issue erstellt, zugewiesen und erwähnt.
 - [x] Tatsächlichen Empfang der GitHub-Benachrichtigung vom Eigentümer bestätigt.
 - [x] Reale Nano-/Junker-/Summer-Kette mit dem Zielprogramm vom Eigentümer bestätigt.
-- [ ] Vertraulichen Meldekanal nach öffentlicher Freigabe aktivieren und überprüfen.
+- [x] Vertraulichen Meldekanal aktiviert und per GitHub-API als eingeschaltet geprüft.
+- [x] Native CodeQL-Analyse eingerichtet; Secret Scanning und Push Protection aktiviert.
 - [x] Öffentliche Sichtbarkeit vom Eigentümer ausdrücklich freigegeben.
+- [x] Repository öffentlich unter Auragant/Morsetaste bereitgestellt.
 
 ### Datenschutz und Meldeweg
 
@@ -115,8 +119,8 @@ Kontaktweg veröffentlicht. Vertrauliche Sicherheitsmeldungen sollen über
 Kontodaten hinter einem GitHub-Konto sowie etwaige bereits vorhandene fremde
 Kopien sind keine durch dieses Repository kontrollierbaren Daten.
 Eine vollständige Anonymität oder weltweite Löschung aller Kopien wird nicht
-zugesichert. Für das öffentliche Repository ist der vertrauliche Meldekanal
-zu aktivieren und sein Status zu prüfen.
+zugesichert. Der vertrauliche Meldekanal ist im öffentlichen Repository aktiviert;
+die GitHub-API bestätigt `enabled: true`.
 [GitHub: Private vulnerability reporting](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository).
 
 Hardwarefunktion und tatsächlicher Benachrichtigungsempfang wurden am
@@ -128,7 +132,8 @@ Bei kostenlosem privatem Hobbyumfang sind die Punkte zu kommerziellem Angebot
 oben bedingt relevant, nicht pauschal zusätzliche Release-Blocker. Eine spätere
 kommerzielle Bereitstellung oder Hardwareverteilung erfordert eine neue Prüfung.
 
-Ergebnis: Lizenztexte, LLM-Hinweis und die zugehörigen Quellen sind Bestandteil
-des Release-Pakets. Eine uneingeschränkte rechtliche Unbedenklichkeit wird nicht
-behauptet; die offenen Freigabepunkte müssen vor einer öffentlichen oder
-kommerziellen Bereitstellung beurteilt werden.
+Ergebnis: Die Freigabepunkte für diesen nichtkommerziellen Hobbyumfang sind
+abgearbeitet. Lizenztexte, LLM-Hinweis und die zugehörigen Quellen sind
+Bestandteil des Release-Pakets. Eine uneingeschränkte rechtliche Unbedenklichkeit
+wird nicht behauptet; kommerzielle Bereitstellung oder Hardwareverteilung
+erfordern eine neue Prüfung.
