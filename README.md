@@ -1,6 +1,6 @@
 # MorseBridge – Junker M.T. → Space
 
-Version **1.1.0p** – Public-Ausgabe (`p` = Public).
+Version **1.2.0p** – Public-Ausgabe (`p` = Public).
 
 Die Junker-Morsetaste steuert über einen Arduino Nano mit ATmega328P und CH340C
 die Leertaste des aktiven Windows-Programms. Die kleine C++-Anwendung läuft auch
@@ -66,6 +66,21 @@ pausiert ausschließlich die Tastaturausgabe; der Hardwareschalter schaltet den 
 - **Space:** Zustand der von Windows angenommenen künstlichen Tasteneingabe.
   Das Zielprogramm kann künstliche Eingaben trotzdem ignorieren.
 - **Live-Verlauf:** Kontakt (grün) und Space (blau) der letzten acht Sekunden.
+- **Impulslängen:** Dynamisches Histogramm der vollständigen Kontaktimpulse aus den
+  letzten fünf Minuten, auch bei pausierter Ausgabe. Normalerweise 5-ms-Klassen;
+  bei längeren Impulsen passt sich die Skala an. Nur im Arbeitsspeicher, beim
+  Beenden gelöscht. Unterbrochene oder beim Verbinden schon gehaltene Impulse
+  werden nicht gezählt. Maximal 16.384 Impulse. Die Zeiten stammen vom PC-Empfang
+  und können durch USB-/Windows-Verzögerungen beeinflusst werden.
+  Impulse **über 1.000 ms** werden ausgeschlossen; genau 1.000 ms werden gezählt.
+- **PC-Mithörton:** Häkchen oben rechts aktiviert einen Sinuston über das normale
+  Windows-Audiogerät. Startwert **650 Hz**, per Zähler/Pfeilen oder Zahleneingabe
+  einstellbar von **400 bis 1.000 Hz**. Ungültige Eingaben werden beim Verlassen
+  des Felds auf die letzte gültige Frequenz zurückgesetzt. Beim Start ausgeschaltet;
+  Einstellungen nur für die laufende Sitzung. Der Ton folgt dem Kontakt, auch
+  im eigenen Fenster, im Hintergrund und bei pausierter Space-Ausgabe. Abbruch,
+  Sperre, Standby und Beenden stoppen ihn. Lautstärke über Windows steuern.
+  USB-, Windows- und Audiogeräte-Latenz beeinflussen den hörbaren Zeitpunkt.
 - **Ausgabe pausieren:** gibt Space frei; Kontakt und Verlauf werden weiter angezeigt.
   **Strg + Alt + F12** schaltet die Pause auch im Hintergrund um. Ist diese
   Tastenkombination schon belegt, bleibt die Schaltfläche verfügbar.
@@ -89,6 +104,7 @@ von Windows gesperrte Eingaben lassen sich damit nicht garantiert abfangen.
 
 `MorseBridge.exe --demo` startet einen simulierten SOS-Verlauf. In diesem Modus
 werden weder COM-Ports geöffnet noch echte Tastendrücke erzeugt.
+Der PC-Mithörton kann auch in der Demo aktiviert werden.
 
 ## Wenn etwas nicht funktioniert
 
@@ -129,6 +145,7 @@ In PowerShell im Projektordner:
 ./scripts/build-firmware.ps1            # danach ohne erneute Installation
 ./scripts/test-gui.ps1                  # GUI-/Hintergrundthread-Test ohne Eingaben
 ./scripts/package.ps1                   # versioniertes Komplettpaket erstellen
+./scripts/test-audio.ps1                # drei kurze Töne am Windows-Standardgerät prüfen
 ```
 
 Werkzeuge und Arduino-Pakete bleiben unter `.tools/`. Es erfolgt keine
@@ -176,7 +193,7 @@ GitHub-Issue. Prüfungen, Grenzen und E-Mail-Einstellungen:
 [SECURITY.md](SECURITY.md).
 
 [Rechtliche Vorprüfung und Veröffentlichungs-Checkliste](docs/PUBLICATION_REVIEW.md).
-Das Komplettpaket `MorseBridge-1.1.0p-win64.zip` enthält zusätzlich
+Das Komplettpaket `MorseBridge-1.2.0p-win64.zip` enthält zusätzlich
 die verwendeten Arduino-Core-Quellen und vollständigen Lizenzhinweise.
 Das Projekt wird unter dem GitHub-Alias **Auragant** veröffentlicht; es nennt
 keine persönliche Kontaktadresse des Projektverantwortlichen.

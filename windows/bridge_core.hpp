@@ -2,10 +2,41 @@
 // LLM-assisted implementation; see LICENSE and DISCLAIMER.md.
 #pragma once
 #include <cstdint>
+#include <deque>
 #include <functional>
 #include <string>
 
 namespace morse {
+
+// Session-only rolling sample window. Heartbeats and interrupted holds are not samples.
+class PulseHistory {
+public:
+    static constexpr uint64_t windowMs = 300000;
+    static constexpr uint64_t maxDurationMs = 1000;
+    struct Sample { uint64_t at, duration; };
+    std::deque<Sample> samples;
+    void receive(bool down, uint64_t now) {
+        if (!known_) { known_ = true; down_ = down; return; }
+        if (down == down_) return;
+        down_ = down;
+        if (down) { start_ = now; measuring_ = true; }
+        else if (measuring_) {
+            const uint64_t duration = now - start_;
+            if (duration <= maxDurationMs) samples.push_back({now, duration});
+            measuring_ = false;
+            // Also bound memory in case of unusually dense input.
+            if (samples.size() > 16384) samples.pop_front();
+        }
+        prune(now);
+    }
+    void interrupt() { known_ = false; measuring_ = false; }
+    void prune(uint64_t now) {
+        while (!samples.empty() && now - samples.front().at >= windowMs) samples.pop_front();
+    }
+private:
+    bool known_ = false, down_ = false, measuring_ = false;
+    uint64_t start_ = 0;
+};
 
 // Strict, bounded framing: fragmented reads, CRLF/LF and bootloader garbage
 // are supported; an overlong line is discarded in its entirety.

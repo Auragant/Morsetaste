@@ -32,7 +32,7 @@ Für die Windows-Anwendung stehen sämtliche eigenen C++-Quellen, Ressourcen
 und das MinGW-Buildskript im selben Paket. Zusätzliche Runtime- und
 Toolchain-Bedingungen: `THIRD_PARTY_NOTICES.md`.
 
-Zum Release `1.1.0p` gehört das vollständige Quellen- und Binärpaket
-`MorseBridge-1.1.0p-win64.zip`. Bei separater Weitergabe von EXE oder HEX immer
+Zum Release `1.2.0p` gehört das vollständige Quellen- und Binärpaket
+`MorseBridge-1.2.0p-win64.zip`. Bei separater Weitergabe von EXE oder HEX immer
 auch den gleichwertigen Zugriff auf die passenden vollständigen Quellen
 und Lizenzhinweise sicherstellen.

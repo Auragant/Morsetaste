@@ -1,5 +1,27 @@
 # Prüfstand
 
+## Version 1.2.0p – Histogramm und Windows-Mithörton – 03.10.2026
+
+- Windows-Build mit Warnungen als Fehlern erfolgreich; 85 Kerncode-,
+  16 Sinus-/Hüllkurven- und 37 Firmwareprüfungen bestanden. Neue Prüfungen decken 47/150-ms-Impulse,
+  Heartbeats, unbekannte Startzustände, Verbindungsabbrüche, Ablauf nach
+  fünf Minuten, die Speichergrenze und Ausschluss von Impulsen über 1.000 ms ab.
+- Der reale Windows-Standardausgang wurde mit drei kurzen PCM-Sinustönen
+  (650/400/1.000 Hz) geöffnet und gespeist; Ausgabe, Aus-/Einschalten,
+  Suspend und Thread-/Geräteabschluss geprüft. Das ist ein API-/Gerätetest,
+  keine subjektive Hörprüfung oder Messung der End-to-End-Latenz.
+- GUI-/Demo-Worker-Test erfolgreich: COM-Auswahl, Pause/Fortsetzen und
+  vollständiges Beenden, Kontaktweitergabe bei pausierter Space-Ausgabe sowie
+  Checkbox und Frequenzeingaben (Grenzwerte und ungültige Texte).
+  Histogramm mit simulierten Häufungen um 50/150 ms und Leerzustand gerendert;
+  Demo-Darstellung einschließlich neuer Audio-Bedienelemente visuell geprüft.
+- Nano-Build weiterhin 2.466 Byte Flash / 204 Byte RAM; serielles Protokoll
+  und Firmwarefunktion unverändert. Windows-EXE-/Produktversion 1.2.0p,
+  nur Windows-System-DLLs (zusätzlich WINMM für Audio) erforderlich.
+- 11 Tests der Benachrichtigungslogik erfolgreich; Linux-CI prüft auch den
+  gemeinsam genutzten Tongenerator mit Sanitizern.
+- Zeitmessung bleibt PC-seitig. Kein neuer Hardwaretest durchgeführt.
+
 ## Security-Prüfungen – 03.10.2026
 
 - Öffentlicher Quellstand: ausschließlich Alias-/GitHub-Noreply-Metadaten.

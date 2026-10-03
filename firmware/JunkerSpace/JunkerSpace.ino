@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // LLM-assisted implementation; Arduino core has separate licenses. See LICENSE and DISCLAIMER.md.
 /*
- * JunkerSpace 1.1.0p: Junker M.T. -> Arduino Nano / ATmega328P -> MorseBridge
+ * JunkerSpace 1.2.0p: Junker M.T. -> Arduino Nano / ATmega328P -> MorseBridge
  * Potentialfreier Kontakt zwischen D2 und GND. Keine externe Spannung!
  * Optional: Schalter D4 <-> GND gibt den Mithoerton frei (geschlossen = ein).
  * D8 steuert einen aktiven 5-V-Summer ueber eine NPN-Transistorstufe.

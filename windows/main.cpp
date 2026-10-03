@@ -24,10 +24,12 @@
 #include <thread>
 #include <vector>
 #include "bridge_core.hpp"
+#include "audio_output.hpp"
 
 namespace {
 constexpr wchar_t CLASS_NAME[] = L"JunkerMorseBridgeWindow";
 constexpr int ID_PORT = 101, ID_REFRESH = 102, ID_PAUSE = 103, ID_TOP = 104, ID_CLOSE = 105;
+constexpr int ID_AUDIO = 106, ID_FREQUENCY = 107, ID_SPIN = 108;
 constexpr int HOTKEY_PAUSE = 1;
 constexpr COLORREF BG = RGB(244,247,249), INK = RGB(23,42,59), MUTED = RGB(90,108,124);
 constexpr COLORREF GREEN = RGB(0,125,103), BLUE = RGB(38,101,186), BORDER = RGB(219,227,233);
@@ -145,10 +147,13 @@ struct Snapshot {
     bool armed = false, fault = false, ownWindow = true, demo = false;
     uint64_t presses = 0, lastDuration = 0, lastPacket = 0;
     std::deque<Edge> edges;
+    morse::PulseHistory pulses;
 };
 
 struct App {
     HWND window = nullptr, combo = nullptr, refresh = nullptr, pause = nullptr, top = nullptr, close = nullptr;
+    HWND audioCheck = nullptr, frequency = nullptr, spin = nullptr;
+    morse::AudioOutput audio;
     HFONT font = nullptr, titleFont = nullptr, labelFont = nullptr, stateFont = nullptr;
     UINT dpi = 96;
     std::atomic<bool> stop{false}, enabled{true}, suspended{false}, locked{false};
@@ -167,6 +172,7 @@ struct App {
     void shutdown() {
         stop = true; signal();
         if (worker.joinable()) worker.join();
+        audio.shutdown();
     }
     ~App() {
         shutdown();
@@ -196,6 +202,8 @@ void workerMain() {
     bool accepted = false, lastPhysical = false, lastOutput = false;
     HWND previousForeground = nullptr;
     auto disconnect = [&] {
+        app.audio.contact = false;
+        state.pulses.interrupt();
         bridge.disconnect(); serial.close(); parser.reset(); accepted = false;
         state.port.clear();
     };
@@ -216,6 +224,7 @@ void workerMain() {
     };
     while (!app.stop) {
         const uint64_t now = GetTickCount64();
+        app.audio.suspended = app.suspended || app.locked;
         const HWND foreground = GetForegroundWindow();
         DWORD foregroundPid = 0; GetWindowThreadProcessId(foreground, &foregroundPid);
         const bool ownWindow = foregroundPid == GetCurrentProcessId();
@@ -243,7 +252,9 @@ void workerMain() {
                 (phase >= 2640 && phase < 2760) || (phase >= 2880 && phase < 3000) ||
                 (phase >= 3120 && phase < 3240);
             if (down != bridge.physicalDown || now - lastDemoFrame >= 100) {
+                state.pulses.receive(down, now);
                 bridge.receive(down, now); lastDemoFrame = now;
+                app.audio.contact = bridge.physicalDown;
             }
         } else {
             if (accepted && now - bridge.lastSeen >= morse::Bridge::timeoutMs) {
@@ -278,7 +289,9 @@ void workerMain() {
                     }
                     if (result == 0) break;
                     parser.feed(bytes.data(), bytes.size(), [&](bool down) {
+                        state.pulses.receive(down, GetTickCount64());
                         bridge.receive(down, GetTickCount64());
+                        app.audio.contact = bridge.physicalDown;
                         accepted = true;
                         state.status = L"Nano verbunden · " + state.port;
                         state.detail = L"JunkerSpace v1 · 115200 Baud · D2 ↔ GND";
@@ -301,6 +314,9 @@ void workerMain() {
             }
         }
         bridge.tick(GetTickCount64());
+        app.audio.contact = bridge.connected && bridge.physicalDown;
+        if (!bridge.connected) state.pulses.interrupt();
+        state.pulses.prune(GetTickCount64());
         if (bridge.physicalDown != lastPhysical || bridge.outputDown != lastOutput) {
             if (bridge.physicalDown && !lastPhysical) { ++state.presses; pressAt = now; }
             if (!bridge.physicalDown && lastPhysical) state.lastDuration = now - pressAt;
@@ -331,7 +347,7 @@ void createFonts() {
     };
     app.font = make(14, FW_NORMAL); app.titleFont = make(29, FW_SEMIBOLD);
     app.labelFont = make(12, FW_SEMIBOLD); app.stateFont = make(25, FW_SEMIBOLD);
-    for (HWND control : {app.combo, app.refresh, app.pause, app.top, app.close})
+    for (HWND control : {app.combo, app.refresh, app.pause, app.top, app.close, app.audioCheck, app.frequency})
         if (control) SendMessageW(control, WM_SETFONT, reinterpret_cast<WPARAM>(app.font), TRUE);
 }
 void layout() {
@@ -345,6 +361,9 @@ void layout() {
     move(app.pause, 26, h - 130, 180, 36);
     move(app.top, 226, h - 125, 260, 28);
     move(app.close, w - 142, h - 130, 116, 36);
+    move(app.audioCheck, w - 307, 26, 140, 28);
+    move(app.frequency, w - 160, 26, 66, 28);
+    move(app.spin, w - 94, 26, 18, 28);
 }
 
 void fillRect(HDC dc, RECT rect, COLORREF color) {
@@ -371,7 +390,8 @@ void drawUi(HDC dc, int width, int height) {
         SelectObject(dc, ob); SelectObject(dc, op); DeleteObject(brush); DeleteObject(pen);
     };
     fillRect(dc, {0,0,width,height}, BG);
-    text(L"MorseBridge", 26, 19, w-52, 38, app.titleFont, INK);
+    text(L"MorseBridge", 26, 19, w-355, 38, app.titleFont, INK);
+    text(L"Hz", w-68, 26, 34, 28, app.font, MUTED);
     text(s.demo ? L"DEMO · Vorschau ohne Tastaturausgabe" : L"Junker M.T.  →  Arduino Nano  →  Leertaste", 28, 59, w-56, 24, app.font, MUTED);
     card(26, 96, w-52, 126, WHITE);
     text(L"VERBINDUNG", 42, 106, 150, 20, app.labelFont, MUTED);
@@ -393,7 +413,7 @@ void drawUi(HDC dc, int width, int height) {
     else if (!s.armed) hint = L"Morsetaste einmal loslassen";
     text(hint, right+16, 316, cw-32, 20, app.font, s.fault ? ORANGE : MUTED);
 
-    const int graphBottom = h-148;
+    const int graphBottom = 504;
     card(26, 364, w-52, graphBottom-364, WHITE);
     text(L"LIVE-VERLAUF", 42, 375, 150, 22, app.labelFont, MUTED);
     text(L"Letzte 8 Sekunden", w-208, 375, 166, 22, app.font, MUTED);
@@ -424,12 +444,51 @@ void drawUi(HDC dc, int width, int height) {
         segment(now);
     };
     drawLane(false, y0, GREEN); drawLane(true, y1, BLUE);
+    const int histTop = 520, histBottom = h-148;
+    card(26, histTop, w-52, histBottom-histTop, WHITE);
+    text(L"IMPULSLÄNGEN", 42, histTop+11, 180, 22, app.labelFont, MUTED);
+    text(L"Letzte 5 Minuten · bis 1.000 ms", w-332, histTop+11, 290, 22, app.font, MUTED);
+    const auto& samples = s.pulses.samples;
+    uint64_t maximum = 0;
+    for (const auto& sample : samples) maximum = std::max(maximum, sample.duration);
+    // 5-ms bins for normal Morse speeds; broaden only for longer holds.
+    const uint64_t binMs = std::max(uint64_t(5), (maximum/60/5+1)*5);
+    const uint64_t range = std::max((uint64_t(200)+binMs-1)/binMs, maximum/binMs+1)*binMs;
+    std::vector<unsigned> bins(size_t(range/binMs), 0);
+    for (const auto& sample : samples) ++bins[size_t(sample.duration/binMs)];
+    const unsigned peak = *std::max_element(bins.begin(), bins.end());
+    const int hx0 = 76, hx1 = w-52, hy0 = histTop+61, hy1 = histBottom-51;
+    for (int i=0; i<=4; ++i) {
+        const int y = hy1-(hy1-hy0)*i/4;
+        fillRect(dc, rect(hx0,y,hx1-hx0,1), BORDER);
+    }
+    text(std::to_wstring(peak), 42, hy0-10, 30, 20, app.labelFont, MUTED);
+    text(L"0", 42, hy1-10, 30, 20, app.labelFont, MUTED);
+    for (size_t i=0; i<bins.size(); ++i) {
+        if (!bins[i]) continue;
+        const int left = hx0+int(i*size_t(hx1-hx0)/bins.size());
+        const int next = hx0+int((i+1)*size_t(hx1-hx0)/bins.size());
+        const int barHeight = std::max(1, int(uint64_t(bins[i])*uint64_t(hy1-hy0)/peak));
+        fillRect(dc, rect(left,hy1-barHeight,std::max(1,next-left-1),barHeight), GREEN);
+    }
+    for (int i=0; i<=4; ++i) {
+        const int x = hx0+(hx1-hx0)*i/4;
+        drawText(dc, std::to_wstring(range*uint64_t(i)/4), rect(x-24,hy1+4,48,20),
+                 app.font, MUTED, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+    }
+    text(std::to_wstring(samples.size()) + L" Impulse · Klassen " + std::to_wstring(binMs) +
+         L" ms · Dauer in ms (PC-Empfang)", 42, histBottom-26, w-84, 20, app.font, MUTED);
+    if (samples.empty())
+        text(L"Warte auf vollständige Kontaktimpulse ...", hx0+12, hy0+12, hx1-hx0-24, 24, app.font, MUTED);
     std::wstring footer = s.demo ? L"Demo aktiv: Der Verlauf ist simuliert; echte Tastaturausgabe ist ausgeschaltet."
                                  : L"Space geht an das aktive Programm – auch bei minimierter MorseBridge.";
+    if (app.audio.enabled && app.audio.error)
+        footer = L"PC-Mithörton nicht verfügbar · Windows-Audiogerät prüfen (Fehler " +
+                 std::to_wstring(app.audio.error.load()) + L").";
     text(footer, 28, h-82, w-56, 22, app.font, MUTED);
     text(app.hotkey ? L"Strg + Alt + F12: Pause / Fortsetzen · Schließen beendet das Hilfsprogramm."
                     : L"Pause per Schaltfläche · Schließen beendet das Hilfsprogramm.", 28, h-56, w-56, 22, app.font, MUTED);
-    text(L"v1.1.0p · 5 ms Entprellung · 1 s Verbindungsüberwachung", 28, h-29, w-56, 18, app.labelFont, MUTED);
+    text(L"v1.2.0p · 5 ms Entprellung · 1 s Verbindungsüberwachung", 28, h-29, w-56, 18, app.labelFont, MUTED);
 }
 
 void syncControls(const Snapshot& s) {
@@ -460,6 +519,17 @@ void syncControls(const Snapshot& s) {
 }
 
 void togglePause() { app.enabled = !app.enabled.load(); app.signal(); }
+void readFrequency(bool normalize) {
+    wchar_t value[16]{}; GetWindowTextW(app.frequency, value, 16);
+    wchar_t* end = nullptr;
+    const unsigned long hz = wcstoul(value, &end, 10);
+    if (end != value && *end == L'\0' && hz >= morse::toneMinHz && hz <= morse::toneMaxHz)
+        app.audio.frequency = unsigned(hz);
+    if (normalize) {
+        const auto label = std::to_wstring(app.audio.frequency.load());
+        SetWindowTextW(app.frequency, label.c_str());
+    }
+}
 LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
     case WM_CREATE: {
@@ -473,6 +543,13 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         app.pause = control(WC_BUTTONW, L"Ausgabe pausieren", BS_PUSHBUTTON, ID_PAUSE);
         app.top = control(WC_BUTTONW, L"Immer im Vordergrund", BS_AUTOCHECKBOX, ID_TOP);
         app.close = control(WC_BUTTONW, L"Schließen", BS_PUSHBUTTON, ID_CLOSE);
+        app.audioCheck = control(WC_BUTTONW, L"PC-Mithörton", BS_AUTOCHECKBOX, ID_AUDIO);
+        app.frequency = control(WC_EDITW, L"650", WS_BORDER | ES_NUMBER | ES_RIGHT, ID_FREQUENCY);
+        SendMessageW(app.frequency, EM_SETLIMITTEXT, 4, 0);
+        app.spin = control(UPDOWN_CLASSW, L"", UDS_SETBUDDYINT | UDS_ARROWKEYS | UDS_NOTHOUSANDS, ID_SPIN);
+        SendMessageW(app.spin, UDM_SETBUDDY, reinterpret_cast<WPARAM>(app.frequency), 0);
+        SendMessageW(app.spin, UDM_SETRANGE32, morse::toneMinHz, morse::toneMaxHz);
+        SendMessageW(app.spin, UDM_SETPOS32, 0, morse::toneDefaultHz);
         createFonts(); layout();
         app.hotkey = !app.renderTest && RegisterHotKey(hwnd, HOTKEY_PAUSE, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, VK_F12);
         if (!app.renderTest) WTSRegisterSessionNotification(hwnd, NOTIFY_FOR_THIS_SESSION);
@@ -487,7 +564,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
     }
     case WM_GETMINMAXINFO: {
         auto* limits = reinterpret_cast<MINMAXINFO*>(lParam);
-        RECT r{0,0,app.scale(740),app.scale(648)};
+        RECT r{0,0,app.scale(740),app.scale(888)};
         AdjustWindowRectExForDpi(&r, WS_OVERLAPPEDWINDOW, FALSE, 0, app.dpi);
         limits->ptMinTrackSize = {r.right-r.left, r.bottom-r.top}; return 0;
     }
@@ -504,6 +581,11 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
             } break;
         case ID_REFRESH: ++app.revision; app.signal(); break;
         case ID_PAUSE: togglePause(); break;
+        case ID_AUDIO: app.audio.enabled = Button_GetCheck(app.audioCheck) == BST_CHECKED; break;
+        case ID_FREQUENCY:
+            if (HIWORD(wParam) == EN_CHANGE) readFrequency(false);
+            else if (HIWORD(wParam) == EN_KILLFOCUS) readFrequency(true);
+            break;
         case ID_TOP:
             SetWindowPos(hwnd, Button_GetCheck(app.top) == BST_CHECKED ? HWND_TOPMOST : HWND_NOTOPMOST,
                          0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE); break;
@@ -511,11 +593,11 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         } return 0;
     case WM_HOTKEY: if (wParam == HOTKEY_PAUSE) togglePause(); return 0;
     case WM_POWERBROADCAST:
-        if (wParam == PBT_APMSUSPEND) { app.suspended = true; app.signal(); }
+        if (wParam == PBT_APMSUSPEND) { app.suspended = true; app.audio.suspended = true; app.signal(); }
         if (wParam == PBT_APMRESUMEAUTOMATIC || wParam == PBT_APMRESUMESUSPEND) { app.suspended = false; ++app.revision; app.signal(); }
         return TRUE;
     case WM_WTSSESSION_CHANGE:
-        if (wParam == WTS_SESSION_LOCK || wParam == WTS_SESSION_LOGOFF) { app.locked = true; app.signal(); }
+        if (wParam == WTS_SESSION_LOCK || wParam == WTS_SESSION_LOGOFF) { app.locked = true; app.audio.suspended = true; app.signal(); }
         if (wParam == WTS_SESSION_UNLOCK || wParam == WTS_SESSION_LOGON) { app.locked = false; ++app.revision; app.signal(); }
         return 0;
     case WM_ERASEBKGND: return 1;
@@ -531,7 +613,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         BitBlt(target,0,0,r.right,r.bottom,back,0,0,SRCCOPY);
         SelectObject(back,old); DeleteObject(bmp); DeleteDC(back); EndPaint(hwnd,&paint); return 0;
     }
-    case WM_QUERYENDSESSION: app.suspended = true; app.signal(); return TRUE;
+    case WM_QUERYENDSESSION: app.suspended = true; app.audio.suspended = true; app.signal(); return TRUE;
     case WM_ENDSESSION:
         if (wParam) app.shutdown();
         else { app.suspended = false; ++app.revision; app.signal(); }
@@ -554,7 +636,7 @@ bool saveWindowPng(const std::wstring& path) {
     drawUi(dc,rc.right,rc.bottom);
     // Paint child HWNDs in CLIENT coordinates. WM_PRINT on the top-level window
     // also includes non-client offsets; PrintWindow may fail for hidden windows.
-    for (HWND control : {app.combo,app.refresh,app.pause,app.top,app.close}) {
+    for (HWND control : {app.combo,app.refresh,app.pause,app.top,app.close,app.audioCheck,app.frequency,app.spin}) {
         RECT child{}; GetWindowRect(control,&child);
         MapWindowPoints(HWND_DESKTOP,app.window,reinterpret_cast<POINT*>(&child),2);
         const int saved = SaveDC(dc);
@@ -587,6 +669,21 @@ int renderTests(const std::wstring& directory) {
         Gdiplus::GdiplusShutdown(token); DestroyWindow(app.window); return 4;
     }
     bool ok = saveWindowPng(directory+L"\\gui-suche.png");
+    ok = !app.audio.enabled && app.audio.frequency == 650 && ok;
+    for (const unsigned hz : {400u, 650u, 1000u}) {
+        SetWindowTextW(app.frequency, std::to_wstring(hz).c_str());
+        ok = app.audio.frequency == hz && ok;
+    }
+    for (const wchar_t* invalid : {L"399", L"1001", L"", L"abc"}) {
+        SetWindowTextW(app.frequency, invalid);
+        SendMessageW(app.window, WM_COMMAND, MAKEWPARAM(ID_FREQUENCY, EN_KILLFOCUS), 0);
+        GetWindowTextW(app.frequency, selected, 128);
+        ok = app.audio.frequency == 1000 && wcscmp(selected, L"1000") == 0 && ok;
+    }
+    SetWindowTextW(app.frequency, L"650");
+    Button_SetCheck(app.audioCheck, BST_CHECKED);
+    SendMessageW(app.window, WM_COMMAND, ID_AUDIO, 0);
+    ok = app.audio.enabled && ok;
     state.demo = true; state.connected = true; state.physical = true; state.output = true; state.armed = true;
     state.status = L"Demo · Nano verbunden · COM5"; state.detail = L"Vorschau · keine echte Tastaturausgabe";
     state.port = L"COM5"; state.presses = 12; state.lastDuration = 124;
@@ -597,9 +694,18 @@ int renderTests(const std::wstring& directory) {
         state.edges.push_back({at+uint64_t(i%3 == 0 ? 360 : 120),false,false});
     }
     state.edges.push_back({now-220,true,true});
+    state.pulses.receive(false, now-60000);
+    for (int i=0; i<120; ++i) {
+        const uint64_t at = now-59000+uint64_t(i)*400;
+        state.pulses.receive(true,at);
+        state.pulses.receive(false,at+uint64_t(i%3 == 0 ? 145+i%4*5 : 42+i%4*5));
+    }
     app.publish(state); syncControls(state); ok = saveWindowPng(directory+L"\\gui-demo.png") && ok;
     state.enabled = false; state.output = false; state.edges.push_back({now,false,false});
     app.publish(state); syncControls(state); ok = saveWindowPng(directory+L"\\gui-pause.png") && ok;
+    Button_SetCheck(app.audioCheck, BST_UNCHECKED);
+    SendMessageW(app.window, WM_COMMAND, ID_AUDIO, 0);
+    ok = !app.audio.enabled && ok;
     Gdiplus::GdiplusShutdown(token);
     // Smoke-test the real background thread and the actual window commands.
     // Demo mode guarantees that no serial port or system keyboard is touched.
@@ -607,6 +713,7 @@ int renderTests(const std::wstring& directory) {
     app.wake = CreateEventW(nullptr,FALSE,FALSE,nullptr);
     if (!app.wake) { DestroyWindow(app.window); return 5; }
     app.worker = std::thread(workerMain);
+    app.audio.start();
     auto awaitState = [](bool enabled) {
         const uint64_t deadline = GetTickCount64()+1000;
         while (GetTickCount64()<deadline) {
@@ -619,6 +726,16 @@ int renderTests(const std::wstring& directory) {
     ok = awaitState(true) && ok;
     SendMessageW(app.window,WM_COMMAND,ID_PAUSE,0);
     ok = awaitState(false) && ok;
+    const uint64_t contactDeadline = GetTickCount64()+6500;
+    bool contactWhilePaused = false;
+    while (GetTickCount64()<contactDeadline) {
+        const auto value = app.readSnapshot();
+        if (!value.enabled && value.physical && app.audio.contact && !value.output) {
+            contactWhilePaused = true; break;
+        }
+        Sleep(10);
+    }
+    ok = contactWhilePaused && ok;
     SendMessageW(app.window,WM_COMMAND,ID_PAUSE,0);
     ok = awaitState(true) && ok;
     SendMessageW(app.window,WM_COMMAND,ID_CLOSE,0);
@@ -627,6 +744,7 @@ int renderTests(const std::wstring& directory) {
         if (message.message != WM_QUIT) { TranslateMessage(&message); DispatchMessageW(&message); }
     }
     ok = !IsWindow(app.window) && !app.worker.joinable() && ok;
+    ok = !app.audio.contact && !app.audio.active && ok;
     app.shutdown();
     return ok ? 0 : 3;
 }
@@ -650,13 +768,13 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int show) {
             CloseHandle(instanceLock); return 0;
         }
     }
-    INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_STANDARD_CLASSES}; InitCommonControlsEx(&controls);
+    INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_STANDARD_CLASSES | ICC_UPDOWN_CLASS}; InitCommonControlsEx(&controls);
     WNDCLASSEXW cls{}; cls.cbSize = sizeof(cls); cls.lpfnWndProc = windowProc; cls.hInstance = instance;
     cls.hCursor = LoadCursorW(nullptr,IDC_ARROW); cls.hIcon = LoadIconW(nullptr,IDI_APPLICATION);
     cls.lpszClassName = CLASS_NAME;
     if (!RegisterClassExW(&cls)) { if (instanceLock) CloseHandle(instanceLock); return 1; }
     app.dpi = GetDpiForSystem();
-    RECT size{0,0,app.scale(800),app.scale(668)};
+    RECT size{0,0,app.scale(800),app.scale(908)};
     AdjustWindowRectExForDpi(&size,WS_OVERLAPPEDWINDOW,FALSE,0,app.dpi);
     HWND window = CreateWindowExW(0,CLASS_NAME,app.demo ? L"MorseBridge – Demo (ohne Tastaturausgabe)" : L"MorseBridge – Junker M.T.",
         WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN, CW_USEDEFAULT,CW_USEDEFAULT,size.right-size.left,size.bottom-size.top,
@@ -666,6 +784,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int show) {
     app.wake = CreateEventW(nullptr,FALSE,FALSE,nullptr);
     if (!app.wake) { DestroyWindow(window); if (instanceLock) CloseHandle(instanceLock); return 1; }
     app.worker = std::thread(workerMain);
+    app.audio.start();
     ShowWindow(window,show); UpdateWindow(window);
     MSG message{};
     while (GetMessageW(&message,nullptr,0,0) > 0) {

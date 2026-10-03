@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-only
-param([ValidatePattern('^\d+\.\d+\.\d+(?:p)?$')][string]$Version = '1.1.0p')
+param([ValidatePattern('^\d+\.\d+\.\d+(?:p)?$')][string]$Version = '1.2.0p')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 # A fresh staging directory prevents old files leaking into a later package.

@@ -14,6 +14,42 @@ int main() {
     using morse::Bridge;
     using morse::FrameParser;
     {
+        morse::PulseHistory history;
+        history.receive(true, 0); history.receive(false, 100);
+        require(history.samples.empty(), "initial held contact has no known start");
+        history.receive(true, 200); history.receive(true, 220); history.receive(false, 247);
+        history.receive(false, 260);
+        require(history.samples.size() == 1 && history.samples.front().duration == 47,
+                "47ms pulse counted once despite heartbeats");
+        history.receive(true, 300); history.receive(false, 450);
+        require(history.samples.back().duration == 150, "150ms pulse measured independently");
+        history.receive(true, 500); history.interrupt(); history.receive(false, 900);
+        require(history.samples.size() == 2, "disconnect does not complete a pulse");
+        history.prune(300246);
+        require(history.samples.size() == 2, "history survives live timeline and expires at boundary");
+        history.prune(300247);
+        require(history.samples.size() == 1, "five minute boundary removes oldest sample");
+        history.prune(300450);
+        require(history.samples.empty(), "idle history expires completely");
+        history.receive(true, 300500); history.receive(false, 300500);
+        require(history.samples.size() == 1 && history.samples.front().duration == 0,
+                "same read zero duration remains visible");
+        for (uint64_t i=0; i<20000; ++i) {
+            history.receive(true, 300501+i*2); history.receive(false, 300502+i*2);
+        }
+        require(history.samples.size() == 16384, "pulse history memory bounded");
+        history.prune(700000);
+        history.receive(true, 700000); history.receive(false, 701000);
+        require(history.samples.size() == 1 && history.samples.front().duration == 1000,
+                "exactly one second remains in histogram");
+        history.receive(true, 702000); history.receive(false, 703001);
+        history.receive(true, 704000); history.receive(false, 714000);
+        require(history.samples.size() == 1, "holds over one second never enter histogram");
+        history.receive(true, 715000); history.receive(false, 715047);
+        require(history.samples.size() == 2 && history.samples.back().duration == 47,
+                "normal pulse after excluded hold still recorded");
+    }
+    {
         const std::string stream = "bootloader?\nJUNKER/1 U\r\nJUNKER/1 D\nJUNKER/1 U\n";
         for (size_t split=0; split<=stream.size(); ++split) {
             FrameParser parser; std::vector<bool> frames;

@@ -1,5 +1,18 @@
 # Änderungen
 
+## 1.2.0p – Histogramm und PC-Mithörton – 03.10.2026
+
+- Dynamisches Histogramm der Kontaktimpulslängen über die letzten fünf Minuten.
+  Speicherung nur im RAM, mit 5-ms-Klassen bei üblichen Morsegeschwindigkeiten;
+  längere Impulse erweitern die Skala. Verbindungsabbrüche erzeugen keine Messwerte.
+- Impulse über 1.000 ms werden aus dem Histogramm ausgeschlossen.
+- Optionaler Windows-PC-Mithörton als Sinus: Checkbox und Frequenzzähler oben
+  rechts, 650 Hz voreingestellt, zulässiger Bereich 400–1.000 Hz.
+- Ton folgt dem Kontakt unabhängig von der Space-Pause. Kurze Ein-/Ausblendung,
+  eigener Audio-Thread, Stoppen bei Verbindungsabbruch, Sperre, Standby und Beenden.
+- Histogramm und Audioeinstellungen bleiben ausschließlich im Arbeitsspeicher.
+- Neue Prüfungen für Impulsgrenze, Sinusfrequenzen, Ein-/Ausblendung und GUI-Eingaben.
+
 ## 1.1.0p – Public-Ausgabe – 03.10.2026
 
 - GitHub Actions: Cppcheck, geschwärzter Gitleaks-History-Scan und Tests mit Sanitizern.
