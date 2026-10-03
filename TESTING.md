@@ -52,6 +52,14 @@ Quellen: [GitHub: Zeitpläne und Inaktivitätslimit](https://docs.github.com/en/
 [GitHub: Runner-Images und Aktualisierungen](https://github.com/actions/runner-images#image-definitions),
 [Microsoft: C++-Buildwerkzeuge](https://learn.microsoft.com/en-us/cpp/build/building-on-the-command-line).
 
+Die Einrichtung wurde am 04.10.2026 lokal und auf GitHub geprüft:
+beide Windows-Runner samt unveränderter Release-EXE sowie Microsofts Compiler
+und Windows-SDK **10.0.26100.0** waren erfolgreich
+([erster GitHub-Prüflauf](https://github.com/Auragant/Morsetaste/actions/runs/37160064213)).
+Zusätzlich bestanden 13 simulierte Kompatibilitäts-Benachrichtigungsszenarien,
+die PowerShell-Syntaxprüfung und actionlint 1.7.12. Der CodeQL-Testhinweis und
+seine Einordnung stehen in [SECURITY.md](SECURITY.md#einordnung-des-ersten-codeql-hinweises).
+
 ## Version 1.2.1 – 04.10.2026
 
 Der Eigentümer bestätigte den erforderlichen User-Test mit „Test bestanden“.

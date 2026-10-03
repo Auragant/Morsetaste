@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Exercise the exact privileged workflow script with a fake GitHub API.
-// Only run a trusted checkout: node:vm is NOT a security sandbox.
+// Import a static function; never evaluate JavaScript read from the YAML file.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const notify = require('../.github/scripts/compatibility-notify.cjs');
 const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/compatibility.yml'), 'utf8');
 const match = workflow.match(/^ {10}script: \|\r?\n([\s\S]+)$/m);
 assert.ok(match, 'notification script exists');
-const script = match[1].replace(/^ {12}/gm, '');
+const script = match[1].replace(/^ {12}/gm, '').replace(/\r\n/g, '\n').trim();
+const invocation = 'await notify({github, context, core, results: JSON.parse(process.env.CHECK_RESULTS)});';
+assert.equal(script, `${notify.toString().replace(/\r\n/g, '\n')}\n${invocation}`,
+  'the tested static function is identical to the privileged workflow script');
 const marker = '<!-- morsebridge-compatibility-monitor:v1 -->';
 const openIssue = {number: 7, body: marker, user: {login: 'github-actions[bot]'}};
 const good = {windows: {result: 'success'}, sdk: {result: 'success'}};
@@ -23,12 +26,11 @@ async function run(results, issues = [], stale = false) {
   const sandbox = {
     context: {repo: {owner: 'owner', repo: 'repo'}, serverUrl: 'https://github.com', runId: 42,
       sha: 'current', payload: {repository: {default_branch: 'main'}}},
-    process: {env: {CHECK_RESULTS: JSON.stringify(results)}},
     core: {notice: () => {}},
     github: {paginate: async () => issues, rest: {issues: issuesApi,
       repos: {getBranch: async () => ({data: {commit: {sha: stale ? 'newer' : 'current'}}})}}}
   };
-  await vm.runInNewContext(`(async () => {\n${script}\n})()`, sandbox);
+  await notify({...sandbox, results});
   return calls;
 }
 
