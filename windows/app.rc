@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include <windows.h>
+#include "version.hpp"
+#include "resource_ids.h"
+IDI_MORSEBRIDGE ICON "assets/morsebridge-icon-v1.ico"
 1 RT_MANIFEST "app.manifest"
 1 VERSIONINFO
-FILEVERSION 1,2,1,0
-PRODUCTVERSION 1,2,1,0
+FILEVERSION MB_VERSION_RC
+PRODUCTVERSION MB_VERSION_RC
 FILEOS VOS_NT_WINDOWS32
 FILETYPE VFT_APP
 BEGIN
@@ -12,9 +15,9 @@ BEGIN
   BLOCK "040704b0"
   BEGIN
    VALUE "FileDescription", "Junker M.T. zu Space - MorseBridge\0"
-   VALUE "FileVersion", "1.2.1\0"
+   VALUE "FileVersion", MB_VERSION_STRING "\0"
    VALUE "ProductName", "MorseBridge\0"
-   VALUE "ProductVersion", "1.2.1\0"
+   VALUE "ProductVersion", MB_VERSION_STRING "\0"
    VALUE "OriginalFilename", "MorseBridge.exe\0"
   END
  END

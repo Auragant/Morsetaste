@@ -1,5 +1,28 @@
 # Änderungen
 
+## 1.2.2 – in Vorbereitung
+
+- Eigenes App-Icon: Leertaste mit Morseimpulsen, eingebettet für EXE,
+  Hauptfenster und Dialoge in mehreren Windows-Icongrößen.
+- Klassische Menüleiste mit „Datei“, „Optionen“ und „Hilfe“. „Über MorseBridge“
+  zeigt Version, Build-Zeitpunkt in UTC und den Link zum GitHub-Projekt.
+- Manuelle Updateprüfung gegen öffentliche stabile GitHub-Releases. Ein neuer
+  Release lässt sich im Browser öffnen; keine automatische Installation,
+  keine Hintergrundprüfung beim Start und keine Download-/Firmwareautomatik.
+- Erscheinung wahlweise System, Hell, Dunkel, Mitternacht, Amber oder Matrix.
+  Einstellungen bieten direkte Vorschau; „OK“ übernimmt, „Abbrechen“ verwirft
+  die Vorschau. System folgt dem hellen/dunklen Windows-App-Modus.
+- Farbschema und gültige Mithörfrequenz bleiben lokal unter
+  `%LOCALAPPDATA%\MorseBridge\settings.ini` erhalten. Standard: System und
+  650 Hz; PC-Mithörton beim Start weiterhin aus. COM-Auswahl, Pause und
+  „Immer im Vordergrund“ werden nicht dauerhaft gespeichert.
+- Versionsquelle für EXE, About und Paketbau vereinheitlicht; Build-Metadaten
+  und Manifest werden beim Build erzeugt. Paketbau prüft die EXE-Version und
+  baut die getestete EXE nicht erneut.
+- Firmware und serielles Protokoll bleiben unverändert; erneutes Flashen ist
+  für dieses Windows-Update nicht erforderlich. Release erst nach User-Test
+  und erfolgreichen Security-/CodeQL-Prüfungen des Veröffentlichungsstands.
+
 ## 1.2.1 – 04.10.2026
 
 - PC-Mithörton von waveOut auf ereignisgesteuertes WASAPI im Shared-Modus umgestellt.

@@ -1,7 +1,10 @@
 # MorseBridge – Junker M.T. → Space
 
-Version **1.2.1** – User-Test am 04.10.2026 bestanden. Ab dieser Version entfällt
-der bisherige Zusatz `p`.
+Version **1.2.2 in Vorbereitung** – Menüleiste, manuelle Updateprüfung, Themes und App-Icon.
+User-Test und GitHub-Prüfungen für 1.2.2 stehen vor der Veröffentlichung noch aus.
+Der lokale Testablauf steht in [User-Test 1.2.2](docs/USER_TEST_1.2.2.md).
+Die zuletzt veröffentlichte Version **1.2.1** hat den User-Test am 04.10.2026
+bestanden. Seit 1.2.1 entfällt der bisherige Zusatz `p`.
 
 **Hinweis zu 1.2.0p:** Rauer/verzerrter PC-Mithörton und ein Windows-Absturz
 wurden gemeldet. Der Zusammenhang mit dem Absturz ist ungeklärt.
@@ -72,7 +75,8 @@ pausiert ausschließlich die Tastaturausgabe; der Hardwareschalter schaltet den 
   letzten Impulses. Die angezeigte Dauer wird am PC gemessen, nicht im Nano.
 - **Space:** Zustand der von Windows angenommenen künstlichen Tasteneingabe.
   Das Zielprogramm kann künstliche Eingaben trotzdem ignorieren.
-- **Live-Verlauf:** Kontakt (grün) und Space (blau) der letzten acht Sekunden.
+- **Live-Verlauf:** Kontakt und Space der letzten acht Sekunden; im hellen
+  Standard-Farbschema grün und blau, in den übrigen Themes passend eingefärbt.
 - **Impulslängen:** Dynamisches Histogramm der vollständigen Kontaktimpulse aus den
   letzten fünf Minuten, auch bei pausierter Ausgabe. Normalerweise 5-ms-Klassen;
   bei längeren Impulsen passt sich die Skala an. Nur im Arbeitsspeicher, beim
@@ -81,10 +85,12 @@ pausiert ausschließlich die Tastaturausgabe; der Hardwareschalter schaltet den 
   und können durch USB-/Windows-Verzögerungen beeinflusst werden.
   Impulse **über 1.000 ms** werden ausgeschlossen; genau 1.000 ms werden gezählt.
 - **PC-Mithörton:** Häkchen oben rechts aktiviert einen Sinuston über das normale
-  Windows-Audiogerät. Startwert **650 Hz**, per Zähler/Pfeilen oder Zahleneingabe
+  Windows-Audiogerät. Ohne gespeicherten Wert **650 Hz**, per Zähler/Pfeilen oder Zahleneingabe
   einstellbar von **400 bis 1.000 Hz**. Ungültige Eingaben werden beim Verlassen
-  des Felds auf die letzte gültige Frequenz zurückgesetzt. Beim Start ausgeschaltet;
-  Einstellungen nur für die laufende Sitzung. Der Ton folgt dem Kontakt, auch
+  des Felds auf die letzte gültige Frequenz zurückgesetzt. Die gültige Frequenz
+  wird beim Verlassen des Felds oder normalen Beenden lokal gespeichert.
+  Der PC-Mithörton ist beim Start ausgeschaltet; das Häkchen gilt nur für die
+  laufende Sitzung. Der Ton folgt dem Kontakt, auch
   im eigenen Fenster, im Hintergrund und bei pausierter Space-Ausgabe. Abbruch,
   Sperre, Standby und Beenden stoppen ihn. Lautstärke über Windows steuern.
   USB-, Windows- und Audiogeräte-Latenz beeinflussen den hörbaren Zeitpunkt.
@@ -98,6 +104,22 @@ pausiert ausschließlich die Tastaturausgabe; der Hardwareschalter schaltet den 
   Tastendrücken zu übernehmen. Funktioniert auch bei aktiviertem Zielfenster.
 - **Schließen / X:** gibt ein von der App gehaltenes Space frei und beendet die App.
   Kein Tray-Prozess und kein Windows-Dienst bleiben zurück.
+- **Menüleiste:** „Datei → Beenden“ schließt die Anwendung.
+  „Hilfe → Über MorseBridge“ zeigt Version, Build-Zeitpunkt in UTC und GitHub-Link.
+- **Einstellungen:** „Optionen → Einstellungen“ bietet **System, Hell, Dunkel,
+  Mitternacht, Amber und Matrix**. Eine Auswahl wird sofort als Vorschau sichtbar;
+  „OK“ speichert sie, „Abbrechen“ stellt das vorherige Farbschema wieder her.
+  **System** folgt automatisch dem hellen/dunklen Windows-App-Modus.
+- **Lokal gespeichert:** Farbschema und gültige Frequenz liegen in
+  `%LOCALAPPDATA%\MorseBridge\settings.ini`, unabhängig vom EXE-Ordner.
+  Ohne gültige Datei startet die App mit System und 650 Hz. COM-Auswahl,
+  Ausgabe-Pause, Mithörton-Häkchen und „Immer im Vordergrund“ sind Sitzungseinstellungen.
+- **Updates:** „Hilfe → Nach Updates suchen“ fragt manuell den neuesten stabilen
+  Release von **Auragant/Morsetaste** ab. Währenddessen bleibt die App bedienbar.
+  Ist eine neuere Version verfügbar, lässt sich die zugehörige GitHub-Releaseseite
+  im Browser öffnen. Download und Austausch der EXE erfolgen dort manuell;
+  MorseBridge vorher normal beenden. Es gibt weder eine Prüfung beim Start noch
+  automatische Installation. Ohne Internet bleiben alle lokalen Funktionen nutzbar.
 
 Solange MorseBridge selbst das aktive Fenster ist, wird nur der Kontakt angezeigt;
 es wird kein Space an die eigenen Bedienelemente gesendet. Für die Ausgabe das
@@ -115,6 +137,11 @@ von Windows gesperrte Eingaben lassen sich damit nicht garantiert abfangen.
 `MorseBridge.exe --demo` startet einen simulierten SOS-Verlauf. In diesem Modus
 werden weder COM-Ports geöffnet noch echte Tastendrücke erzeugt.
 Der PC-Mithörton kann auch in der Demo aktiviert werden.
+
+Für isolierte lokale UI-Prüfungen steht `--ui-test <Einstellungsdatei>` bereit.
+Dieser Modus simuliert den Nano und die Updateantwort (Version 1.2.3), verwendet
+nur die angegebene Datei und erzeugt keine echte Space-Ausgabe. Die simulierte
+Updateanzeige ist keine Aussage über eine veröffentlichte Version.
 
 ## Wenn etwas nicht funktioniert
 
@@ -162,6 +189,11 @@ Werkzeuge und Arduino-Pakete bleiben unter `.tools/`. Es erfolgt keine
 systemweite Installation und **kein automatisches Flashen eines Boards**.
 Ein vorhandener MinGW-w64-Compiler kann mit `build.ps1 -Compiler <Pfad>`
 verwendet werden. Arduino IDE ist alternativ nur für den Sketch nötig.
+`build-firmware.ps1 -ToolsRoot <Pfad>` und `package.ps1 -ToolsRoot <Pfad>`
+können einen bereits vorhandenen Werkzeug-/Arduino-Core-Ordner verwenden.
+Die zentrale Windows-Version steht in `windows/version.hpp`; `build.ps1`
+erzeugt Build-Zeitpunkt in UTC und Manifest unter `build/`.
+Der Paketbau prüft EXE-/Produktversion und erzeugt das ZIP ohne erneuten EXE-Build.
 
 Grafikprüfung ohne COM-Port oder Tastatureingaben:
 
@@ -194,6 +226,9 @@ getestet und dies am 03.10.2026 bestätigt. Dies gilt für den getesteten Aufbau
 nicht als Garantie für alle Geräte oder Zielprogramme.
 Den User-Test der überarbeiteten PC-Audioausgabe von 1.2.1 hat er am
 04.10.2026 als bestanden bestätigt; die veröffentlichte EXE ist dieselbe Datei.
+Dieser Test bestätigt noch nicht die neue 1.2.2-EXE. Vor deren Veröffentlichung
+sind der erneute User-Test sowie Security checks und CodeQL für den
+Veröffentlichungsstand erforderlich.
 
 Prüfergebnisse: [TESTING.md](TESTING.md) · Änderungen: [CHANGELOG.md](CHANGELOG.md).
 
@@ -205,7 +240,7 @@ GitHub-Issue. Prüfungen, Grenzen und E-Mail-Einstellungen:
 [SECURITY.md](SECURITY.md).
 
 [Rechtliche Vorprüfung und Veröffentlichungs-Checkliste](docs/PUBLICATION_REVIEW.md).
-Das Komplettpaket `MorseBridge-1.2.1-win64.zip` enthält zusätzlich
+Das für 1.2.2 vorgesehene Komplettpaket `MorseBridge-1.2.2-win64.zip` enthält zusätzlich
 die verwendeten Arduino-Core-Quellen und vollständigen Lizenzhinweise.
 Das Projekt wird unter dem GitHub-Alias **Auragant** veröffentlicht; es nennt
 keine persönliche Kontaktadresse des Projektverantwortlichen.

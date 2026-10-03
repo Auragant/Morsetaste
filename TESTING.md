@@ -1,5 +1,82 @@
 # Prüfstand
 
+## Version 1.2.2 – in Vorbereitung
+
+Der neue User-Test und die GitHub-Prüfungen für den Veröffentlichungsstand
+stehen noch aus. Ein bestandener Test von 1.2.1 bestätigt nicht automatisch
+die neue EXE.
+
+Lokale Prüfung am 04.10.2026, nach Einbindung des App-Icons erneut ausgeführt:
+
+- Windows-Build mit Warnungen als Fehlern erfolgreich. **559 Prüfungen bestanden**:
+  85 Kern-, 16 Sinus-, 150 Audioformat-/Puffer-, 30 Audio-Thread-, 37 Firmware-,
+  184 Versions-/Update- und 57 Einstellungsprüfungen.
+- Zusätzlich 11 Benachrichtigungs-Szenarien bestanden, ohne GitHub-Schreibzugriff.
+- App-Icon in der EXE: alle sieben PNG-/RGBA-Ressourcen (16/24/32/48/64/128/256)
+  stimmen bytegleich mit der ICO-Vorlage überein. Große/kleine Icons für
+  100/150/200 % DPI erfolgreich über Windows geladen; About-Bildexport zeigt
+  das eigene Icon in der Titelleiste. Praktischen Monitorwechsel im User-Test prüfen.
+- GUI-/Demo-Worker-Test bestanden, einschließlich Theme-Vorschau/Abbrechen/OK,
+  Updateanzeige mit simuliertem Transport, Abbruch, Pause und vollständigem Beenden.
+  Bildexporte für sechs Darstellungsoptionen bei 100/150/200 % Skalierung vorhanden;
+  die synthetische Skalierung ersetzt keinen Test beim realen Monitorwechsel.
+- Echte öffentliche WinHTTP-HTTPS-Abfrage erfolgreich: Der Server meldete 1.2.1;
+  die lokale 1.2.2 wurde korrekt als ohne neueres verfügbares Release eingeordnet.
+- Nano-Sketch erneut gebaut: 2.466 Byte Flash / 204 Byte RAM. HEX ist bytegleich
+  mit 1.2.1; es wurde kein Board geflasht.
+- Sichtprüfung im isolierten Demo-Modus bestätigte gespeicherte 777 Hz, automatische
+  COM-Auswahl, ausgeschaltete Ton-/Vordergrundoptionen und das Matrix-Menü.
+  Ein dort entdeckter Button-Zeichenfehler wurde behoben und der GUI-Test erneut
+  bestanden. Der Nutzer beendete die anschließende Computer-Use-Prüfung mit Escape;
+  auch nach erneuter Freigabe meldete das Tool den Abbruch weiterhin. Die
+  abschließende sichtbare Button-/Tastatur-/Dropdownprüfung bleibt Teil des
+  User-Tests. Systemwechsel und Windows-Kontrastmodus sind noch praktisch zu prüfen.
+
+SHA-256 der lokal geprüften Test-EXE:
+
+```text
+514ec7e6b8b877697ebd34881a4002e6f38fbe069161a6a30ca0c8b785abb7a9
+```
+
+Der lokale Quellstand basiert auf `f801cff1bdf816a765b57966b255c5d8f8d907f9`
+mit den im vollständigen Testpaket enthaltenen 1.2.2-Änderungen. Prüfsummen liegen
+im Testpaket und daneben unter `dist/SHA256SUMS.txt`. Es wurden keine Änderungen,
+Issues, PRs, Pushes oder Releases auf GitHub veröffentlicht.
+
+Build-Zeitpunkt dieser EXE: `2026-10-03T23:41:18Z` (UTC). Sie ersetzt das frühere
+lokale Testpaket ohne App-Icon. Der Eigentümer bestätigte am 04.10.2026,
+dass der User-Test noch offen ist; Ablauf: `docs/USER_TEST_1.2.2.md`.
+Die bisher leere GCC Runtime Library Exception wurde mit dem vollständigen
+Originaltext ergänzt. Der Paketbau verwirft fehlende/leere Pflicht-Lizenztexte.
+
+Vor Veröffentlichung erforderlich:
+
+- Windows-Build mit Warnungen als Fehlern und sämtliche Kern-, Sinus-,
+  Audioformat-/Puffer-, Audio-Thread-, Firmware-, Update- und Einstellungsprüfungen.
+  Updateprüfungen verwenden gespeicherte Antworten/simulierten Transport statt
+  eines öffentlichen Netzwerkdienstes; Einstellungen verwenden temporäre Pfade.
+- GUI-/Demo-Worker-Test sowie Sichtprüfung aller Farbschemata einschließlich
+  Menü, Dropdown, Checkbox, Spin-Control, About und Einstellungen. Mindestgröße,
+  100/150/200 % DPI, Tastatur-/Fokuszustände und System-Hell/Dunkel-Wechsel prüfen.
+- User-Test der neuen EXE: Nano/Junker/Zielprogramm, PC-Mithörton, gehaltene Taste
+  beim Wechsel in Menü/Dialog/Browser, Loslassen zum erneuten Scharfstellen,
+  Pause-Hotkey, USB-Abziehen, Sperren/Standby und vollständiges Beenden.
+- Theme-Vorschau und Abbrechen, Neustart mit gespeichertem Farbschema/Frequenz,
+  ungültige Frequenz und fehlende/beschädigte/nicht schreibbare Einstellungsdatei.
+  Beim Start bleibt der PC-Mithörton aus.
+- Manuelle Updateprüfung: neuere/gleiche/ältere Version, Offline, Timeout,
+  Rate-Limit und ungültige Antwort; App bleibt bedienbar und beendet sich auch
+  während einer Anfrage. GitHub-/Release-Link im Standardbrowser prüfen.
+- Security checks und CodeQL erfolgreich für den zu veröffentlichenden
+  Quellstand. In dieser Arbeitskopie wurden keine entfernten Prüfungen ausgelöst.
+- Version 1.2.2 in About, Footer, EXE-/Produktversion und ZIP konsistent;
+  Build-Zeitpunkt in UTC eingebettet. SHA-256 und Quellstand der konkret
+  getesteten EXE dokumentieren und diese Datei unverändert paketieren.
+
+Firmware und serielles Protokoll bleiben unverändert; ein Windows-Update auf
+1.2.2 erfordert kein erneutes Flashen. Das Paket bleibt ein vollständiges Quellen-
+und Binärpaket mit verwendeten Arduino-Core-/Variant-Quellen und Lizenzen.
+
 ## Version 1.2.1 – 04.10.2026
 
 Der Eigentümer bestätigte den erforderlichen User-Test mit „Test bestanden“.

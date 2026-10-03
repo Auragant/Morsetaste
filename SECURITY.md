@@ -15,8 +15,10 @@ Security-Abonnement eingerichtet und kein Ausgabenlimit geändert.
 - Gitleaks: bekannte Muster für Zugangsdaten in der vollständigen ausgecheckten
   Git-Historie. Werte werden in den Logs geschwärzt. Auch gelöschte Geheimnisse
   müssen bei einem Befund widerrufen/ersetzt werden.
-- Protokoll-/Firmwaretests: tatsächlicher Kerncode mit AddressSanitizer und
-  UndefinedBehaviorSanitizer unter Linux.
+- Kern-/Firmware-/Update-/Einstellungstests: tatsächlicher plattformunabhängiger
+  Code mit AddressSanitizer und UndefinedBehaviorSanitizer unter Linux.
+  Windows-spezifische Transport- und Dateisystempfade werden zusätzlich lokal
+  unter Windows getestet. Die Updateprüfungen sind offline.
 - Dependabot: wöchentliche Update-Vorschläge für GitHub Actions. Repository-
   Sicherheitswarnungen und automatische Sicherheitsupdates sind aktiviert.
   Manuell heruntergeladene Compiler, Arduino-Core und Gitleaks werden dadurch
@@ -87,6 +89,23 @@ Die persönlichen E-Mail-/Push-Einstellungen werden
 von diesem Repository nicht verändert und eine E-Mail-Zustellung ist nicht
 garantiert.
 Quelle: [GitHub: Benachrichtigungen konfigurieren](https://docs.github.com/en/subscriptions-and-notifications/get-started/configuring-notifications).
+
+## Manuelle Updateprüfung und lokale Einstellungen
+
+Ab 1.2.2 startet nur „Hilfe → Nach Updates suchen“ eine HTTPS-Anfrage an die
+öffentliche GitHub-Releases-API für `Auragant/Morsetaste`. Dabei erhält GitHub
+übliche Verbindungsdaten und eine Programm-/Versionskennung. COM-Port,
+Kontaktzustände und Histogramm werden nicht übertragen. Beim Start und während
+des normalen Betriebs erfolgt keine automatische Anfrage und keine Telemetrie.
+Die App öffnet bei Bedarf eine Release-Seite im Browser; sie installiert oder
+ersetzt weder EXE noch Firmware automatisch.
+
+Theme und gültige Mithörfrequenz werden ausschließlich lokal unter
+`%LOCALAPPDATA%\MorseBridge\settings.ini` gespeichert. Fehlerhafte Einstellungen
+führen zu den Standardwerten System/650 Hz; Speicherfehler verhindern weder
+den Start noch den lokalen Betrieb. Der PC-Mithörton startet weiterhin aus.
+Update- und Einstellungsprüfungen laufen mit Testantworten und isolierten
+temporären Verzeichnissen, ohne reale GitHub-Anfragen oder Benutzerdateien.
 
 ## Probleme melden
 

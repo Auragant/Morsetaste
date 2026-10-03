@@ -32,7 +32,21 @@ Für die Windows-Anwendung stehen sämtliche eigenen C++-Quellen, Ressourcen
 und das MinGW-Buildskript im selben Paket. Zusätzliche Runtime- und
 Toolchain-Bedingungen: `THIRD_PARTY_NOTICES.md`.
 
-Zum Release `1.2.1` gehört das vollständige Quellen- und Binärpaket
-`MorseBridge-1.2.1-win64.zip`. Bei separater Weitergabe von EXE oder HEX immer
+Die Windows-Version wird zentral in `windows/version.hpp` festgelegt.
+`scripts/build.ps1` liest sie für das Manifest und erzeugt den UTC-Buildzeitpunkt
+unter `build/`. EXE-Metadaten und About verwenden dieselbe Versionsquelle.
+Build-Metadaten sind generiert und werden für einen neuen Build neu erstellt;
+statische Analyse benötigt diese Datei nicht. `scripts/package.ps1` gleicht
+EXE-/Produktversion mit der Quelle ab und baut die EXE nicht erneut, damit die
+getestete Datei in das Release gelangt. Ein optionales `-Version` muss ebenfalls
+mit der zentralen Version übereinstimmen.
+
+Vorhandene Werkzeuge können mit `build.ps1 -Compiler <g++.exe>` sowie
+`build-firmware.ps1 -ToolsRoot <Ordner>` und `package.ps1 -ToolsRoot <Ordner>`
+verwendet werden. `ToolsRoot` bezeichnet den Ordner mit `arduino-cli/` und
+`arduino-data/`; Standard bleibt der lokale `.tools/`-Ordner.
+
+Für Release `1.2.2` ist das vollständige Quellen- und Binärpaket
+`MorseBridge-1.2.2-win64.zip` vorgesehen. Bei separater Weitergabe von EXE oder HEX immer
 auch den gleichwertigen Zugriff auf die passenden vollständigen Quellen
 und Lizenzhinweise sicherstellen.

@@ -1,4 +1,4 @@
-MORSEBRIDGE 1.2.1 – JUNKER M.T. / ARDUINO NANO / WINDOWS
+MORSEBRIDGE 1.2.2 (IN VORBEREITUNG) – JUNKER M.T. / ARDUINO NANO / WINDOWS
 
 1. ANSCHLIESSEN
    Beide potentialfreien Schaltkontakte der Junker an D2 und GND des Nano.
@@ -33,8 +33,9 @@ BEDIENUNG
    „PC-Mithörton“ oben rechts: Sinuston über Windows, zunächst ausgeschaltet.
    Frequenz standardmäßig 650 Hz; Zähler/Zahleneingabe von 400 bis 1000 Hz.
    Ton folgt dem Kontakt, auch bei pausierter Ausgabe; Lautstärke über Windows.
-   Frequenz und Häkchen werden nicht dauerhaft gespeichert.
-   Audioausgabe ab 1.2.1 über WASAPI; User-Test am optischen Ausgang bestanden.
+   Gültige Frequenz wird beim Verlassen des Felds oder normalen Beenden gespeichert.
+   Das Häkchen gilt nur für die Sitzung; Mithörton startet immer ausgeschaltet.
+   Audioausgabe ab 1.2.1 über WASAPI; dessen User-Test am optischen Ausgang bestanden.
    Bei Audiofehlern wird der Ton abgeschaltet; erneutes Einschalten versucht
    den Gerätezugriff erneut. Frühere Version 1.2.0p bitte ersetzen.
    Das Programm funktioniert im Hintergrund und minimiert.
@@ -43,6 +44,17 @@ BEDIENUNG
    Im eigenen MorseBridge-Fenster wird nur der Kontakt angezeigt.
    Nach Fortsetzen oder einem Fensterwechsel während des Tastens zuerst loslassen.
    X oder „Schließen“ gibt Space frei und beendet das Programm vollständig.
+   Menü „Datei → Beenden“ schließt ebenfalls vollständig.
+   „Hilfe → Über MorseBridge“ zeigt Version, Build-Zeit (UTC) und GitHub-Link.
+   „Hilfe → Nach Updates suchen“ prüft manuell stabile GitHub-Releases und
+   bietet bei neuer Version deren Seite im Browser an. Kein automatischer
+   Download, keine automatische Installation; zum EXE-Austausch normal beenden.
+   „Optionen → Einstellungen“: System, Hell, Dunkel, Mitternacht, Amber, Matrix.
+   Auswahl zeigt Vorschau; „OK“ speichert, „Abbrechen“ stellt alten Zustand her.
+   System folgt dem hellen/dunklen Windows-App-Modus.
+   Farbschema und Frequenz: %LOCALAPPDATA%\MorseBridge\settings.ini.
+   Ohne gültige Einstellungen: System und 650 Hz.
+   COM-Auswahl, Pause und „Immer im Vordergrund“ gelten nur für die Sitzung.
 
 OHNE NANO AUSPROBIEREN
    Aus dem Projektordner in PowerShell:
@@ -57,5 +69,7 @@ LLM/KI-unterstützt erstellt. Experimentelles Hobbyprojekt, keine
 sicherheitskritische Verwendung. Vollständiger Hinweis: DISCLAIMER.md.
 Eigener Code: GPLv3 (LICENSE). Fremdlizenzen: THIRD_PARTY_NOTICES.md / licenses/.
 Repository: https://github.com/Auragant/Morsetaste
-EXE, Firmware und Tests wurden gebaut/geprüft. Der Eigentümer hat den
-Praxistest seiner Junker/Nano/Summer-Kombination mit dem Zielprogramm bestätigt.
+Der Eigentümer hat frühere Praxistests der Junker/Nano/Summer-Kombination und
+der PC-Audioausgabe von 1.2.1 bestätigt. Für 1.2.2 stehen User-Test und GitHub-
+Prüfungen noch aus; vor Veröffentlichung müssen sie erfolgreich sein.
+Firmware bleibt unverändert; für dieses Windows-Update ist kein Flashen nötig.

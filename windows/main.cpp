@@ -15,9 +15,13 @@
 #include <wtsapi32.h>
 #include <shellapi.h>
 #include <gdiplus.h>
+#include <dwmapi.h>
+#include <oleacc.h>
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cwctype>
+#include <cstring>
 #include <deque>
 #include <mutex>
 #include <string>
@@ -25,15 +29,55 @@
 #include <vector>
 #include "bridge_core.hpp"
 #include "audio_output.hpp"
+#include "version.hpp"
+#include "resource_ids.h"
+#include "appearance.hpp"
+#include "settings.hpp"
+#include "ui_theme.hpp"
+#include "update_client.hpp"
 
 namespace {
 constexpr wchar_t CLASS_NAME[] = L"JunkerMorseBridgeWindow";
 constexpr int ID_PORT = 101, ID_REFRESH = 102, ID_PAUSE = 103, ID_TOP = 104, ID_CLOSE = 105;
 constexpr int ID_AUDIO = 106, ID_FREQUENCY = 107, ID_SPIN = 108;
+constexpr int ID_SETTINGS = 201, ID_ABOUT = 202, ID_UPDATE = 203;
+constexpr int ID_THEME = 301, ID_GITHUB = 302, ID_RELEASE = 303, ID_UPDATE_STATUS = 304;
+constexpr UINT WM_UPDATE_READY = WM_APP + 1;
 constexpr int HOTKEY_PAUSE = 1;
-constexpr COLORREF BG = RGB(244,247,249), INK = RGB(23,42,59), MUTED = RGB(90,108,124);
-constexpr COLORREF GREEN = RGB(0,125,103), BLUE = RGB(38,101,186), BORDER = RGB(219,227,233);
-constexpr COLORREF ORANGE = RGB(163,86,8), WHITE = RGB(255,255,255);
+
+// Each window owns its DPI-sized icons. Shared resource icons are reserved for
+// the class fallback, since LR_SHARED can return an earlier, differently sized
+// load of the same resource.
+class WindowIcons {
+    HICON large_ = nullptr, small_ = nullptr;
+    static HICON load(int width, int height) {
+        HICON icon = reinterpret_cast<HICON>(LoadImageW(GetModuleHandleW(nullptr),
+            MAKEINTRESOURCEW(IDI_MORSEBRIDGE), IMAGE_ICON, width, height, 0));
+        if (!icon) icon = reinterpret_cast<HICON>(CopyImage(
+            LoadIconW(nullptr, IDI_APPLICATION), IMAGE_ICON, width, height, 0));
+        return icon;
+    }
+public:
+    WindowIcons() = default;
+    WindowIcons(const WindowIcons&) = delete;
+    WindowIcons& operator=(const WindowIcons&) = delete;
+    ~WindowIcons() { clear(); }
+    void apply(HWND window, UINT dpi) {
+        if (!dpi) dpi = 96;
+        HICON large = load(GetSystemMetricsForDpi(SM_CXICON, dpi),
+                           GetSystemMetricsForDpi(SM_CYICON, dpi));
+        HICON small = load(GetSystemMetricsForDpi(SM_CXSMICON, dpi),
+                           GetSystemMetricsForDpi(SM_CYSMICON, dpi));
+        SendMessageW(window, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(large));
+        SendMessageW(window, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(small));
+        clear(); large_ = large; small_ = small;
+    }
+    void clear() {
+        if (large_) DestroyIcon(large_);
+        if (small_) DestroyIcon(small_);
+        large_ = nullptr; small_ = nullptr;
+    }
+};
 
 struct PortInfo { std::wstring name, label; bool ch340 = false; };
 std::wstring property(HDEVINFO list, SP_DEVINFO_DATA& dev, DWORD id) {
@@ -151,8 +195,24 @@ struct Snapshot {
 };
 
 struct App {
+    WindowIcons icons;
     HWND window = nullptr, combo = nullptr, refresh = nullptr, pause = nullptr, top = nullptr, close = nullptr;
     HWND audioCheck = nullptr, frequency = nullptr, spin = nullptr;
+    HWND dialog = nullptr;
+    morse::Settings settings;
+    morse::ThemeId displayTheme = morse::ThemeId::System;
+    std::wstring settingsFile;
+    bool persistenceError = false;
+    morse::ThemePalette palette = morse::paletteFor(morse::ThemeId::System, false, false);
+    morse::UiTheme theme;
+    morse::UpdateChecker updates{[this](morse::Version current,const std::atomic<bool>& cancel,morse::UpdateChecker::Deadline deadline) {
+        if (renderTest || uiTest) {
+            for (int i=0; i<16 && !cancel; ++i) Sleep(5);
+            return morse::UpdateResponse{200,"{\"tag_name\":\"v1.2.3\",\"draft\":false,\"prerelease\":false}",{},0};
+        }
+        return morse::update_detail::fetchLatest(current,cancel,deadline);
+    }};
+    HBRUSH menuBrush = nullptr;
     morse::AudioOutput audio;
     HFONT font = nullptr, titleFont = nullptr, labelFont = nullptr, stateFont = nullptr;
     UINT dpi = 96;
@@ -164,7 +224,7 @@ struct App {
     std::wstring selected;
     Snapshot snapshot;
     std::vector<PortInfo> shownPorts;
-    bool demo = false, renderTest = false, hotkey = false;
+    bool demo = false, renderTest = false, uiTest = false, hotkey = false;
     int scale(int x) const { return MulDiv(x, int(dpi), 96); }
     void signal() { if (wake) SetEvent(wake); }
     Snapshot readSnapshot() { std::lock_guard<std::mutex> lock(mutex); return snapshot; }
@@ -173,13 +233,27 @@ struct App {
         stop = true; signal();
         if (worker.joinable()) worker.join();
         audio.shutdown();
+        updates.shutdown();
     }
     ~App() {
         shutdown();
         if (wake) CloseHandle(wake);
         for (HFONT f : {font, titleFont, labelFont, stateFont}) if (f) DeleteObject(f);
+        if (menuBrush) DeleteObject(menuBrush);
     }
 } app;
+
+#define BG (app.palette.background)
+#define INK (app.palette.text)
+#define MUTED (app.palette.muted)
+#define GREEN (app.palette.contact)
+#define BLUE (app.palette.output)
+#define BORDER (app.palette.border)
+#define ORANGE (app.palette.warning)
+#define WHITE (app.palette.surface)
+
+void applyAppearance(morse::ThemeId id);
+void persistSettings();
 
 bool sendSpace(bool down) {
     INPUT input{}; input.type = INPUT_KEYBOARD;
@@ -398,8 +472,8 @@ void drawUi(HDC dc, int width, int height) {
     text(s.status, 42, 127, w-84, 29, app.stateFont, s.connected ? GREEN : INK);
     text(s.detail, 42, 158, w-84, 22, app.font, MUTED);
     const int cw = (w-68)/2, right = 42 + cw;
-    card(26, 238, cw, 110, s.physical ? RGB(226,247,240) : WHITE);
-    card(right, 238, cw, 110, s.output ? RGB(231,240,255) : WHITE);
+    card(26, 238, cw, 110, s.physical ? app.palette.contactActive : WHITE);
+    card(right, 238, cw, 110, s.output ? app.palette.outputActive : WHITE);
     text(L"MORSETASTE · KONTAKT", 42, 251, cw-32, 20, app.labelFont, MUTED);
     text(!s.connected ? L"—" : s.physical ? L"Gedrückt" : L"Losgelassen", 42, 276, cw-32, 33, app.stateFont, s.physical ? GREEN : INK);
     text(std::to_wstring(s.presses) + L" Betätigungen · zuletzt " + std::to_wstring(s.lastDuration) + L" ms", 42, 316, cw-32, 20, app.font, MUTED);
@@ -485,10 +559,13 @@ void drawUi(HDC dc, int width, int height) {
     if (app.audio.error)
         footer = L"PC-Mithörton deaktiviert · Windows-Audiogerät prüfen (Fehler " +
                  std::to_wstring(app.audio.error.load()) + L").";
+    if (app.persistenceError && !app.audio.error)
+        footer = L"Einstellungen konnten nicht gespeichert werden · Änderung gilt für diese Sitzung.";
     text(footer, 28, h-82, w-56, 22, app.font, MUTED);
-    text(app.hotkey ? L"Strg + Alt + F12: Pause / Fortsetzen · Schließen beendet das Hilfsprogramm."
+    text(app.persistenceError && app.audio.error ? L"Einstellungen konnten nicht gespeichert werden · Änderung gilt für diese Sitzung."
+         : app.hotkey ? L"Strg + Alt + F12: Pause / Fortsetzen · Schließen beendet das Hilfsprogramm."
                     : L"Pause per Schaltfläche · Schließen beendet das Hilfsprogramm.", 28, h-56, w-56, 22, app.font, MUTED);
-    text(L"v1.2.1 · 5 ms Entprellung · 1 s Verbindungsüberwachung", 28, h-29, w-56, 18, app.labelFont, MUTED);
+    text(L"v" MB_VERSION_WSTRING L" · 5 ms Entprellung · 1 s Verbindungsüberwachung", 28, h-29, w-56, 18, app.labelFont, MUTED);
 }
 
 void syncControls(const Snapshot& s) {
@@ -529,17 +606,21 @@ void readFrequency(bool normalize) {
     if (normalize) {
         const auto label = std::to_wstring(app.audio.frequency.load());
         SetWindowTextW(app.frequency, label.c_str());
+        app.settings.frequency = app.audio.frequency.load();
+        persistSettings();
     }
 }
+#include "ui_shell.hpp"
 LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
     case WM_CREATE: {
         app.window = hwnd; app.dpi = GetDpiForWindow(hwnd);
+        app.icons.apply(hwnd, app.dpi);
         auto control = [&](const wchar_t* cls, const wchar_t* text, DWORD style, int id) {
             return CreateWindowExW(0, cls, text, WS_CHILD | WS_VISIBLE | WS_TABSTOP | style,
                 0,0,0,0, hwnd, reinterpret_cast<HMENU>(INT_PTR(id)), GetModuleHandleW(nullptr), nullptr);
         };
-        app.combo = control(WC_COMBOBOXW, L"", CBS_DROPDOWNLIST | WS_VSCROLL, ID_PORT);
+        app.combo = control(WC_COMBOBOXW, L"", CBS_DROPDOWNLIST | CBS_OWNERDRAWFIXED | CBS_HASSTRINGS | WS_VSCROLL, ID_PORT);
         app.refresh = control(WC_BUTTONW, L"Neu suchen", BS_PUSHBUTTON, ID_REFRESH);
         app.pause = control(WC_BUTTONW, L"Ausgabe pausieren", BS_PUSHBUTTON, ID_PAUSE);
         app.top = control(WC_BUTTONW, L"Immer im Vordergrund", BS_AUTOCHECKBOX, ID_TOP);
@@ -550,8 +631,13 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         app.spin = control(UPDOWN_CLASSW, L"", UDS_SETBUDDYINT | UDS_ARROWKEYS | UDS_NOTHOUSANDS, ID_SPIN);
         SendMessageW(app.spin, UDM_SETBUDDY, reinterpret_cast<WPARAM>(app.frequency), 0);
         SendMessageW(app.spin, UDM_SETRANGE32, morse::toneMinHz, morse::toneMaxHz);
-        SendMessageW(app.spin, UDM_SETPOS32, 0, morse::toneDefaultHz);
+        SendMessageW(app.spin, UDM_SETPOS32, 0, app.settings.frequency);
+        SetWindowTextW(app.frequency,std::to_wstring(app.settings.frequency).c_str());
+        app.audio.frequency=app.settings.frequency;
+        for (HWND child : {app.combo,app.refresh,app.pause,app.top,app.close,app.audioCheck,app.frequency,app.spin})
+            app.theme.attach(child);
         createFonts(); layout();
+        applyAppearance(app.settings.theme);
         app.hotkey = !app.renderTest && RegisterHotKey(hwnd, HOTKEY_PAUSE, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, VK_F12);
         if (!app.renderTest) WTSRegisterSessionNotification(hwnd, NOTIFY_FOR_THIS_SESSION);
         SetTimer(hwnd, 1, 33, nullptr); return 0;
@@ -559,14 +645,15 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
     case WM_SIZE: layout(); return 0;
     case WM_DPICHANGED: {
         app.dpi = HIWORD(wParam); createFonts();
+        app.icons.apply(hwnd, app.dpi);
         auto* r = reinterpret_cast<RECT*>(lParam);
         SetWindowPos(hwnd, nullptr, r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER|SWP_NOACTIVATE);
-        layout(); return 0;
+        layout(); app.theme.refresh(); DrawMenuBar(hwnd); return 0;
     }
     case WM_GETMINMAXINFO: {
         auto* limits = reinterpret_cast<MINMAXINFO*>(lParam);
         RECT r{0,0,app.scale(740),app.scale(888)};
-        AdjustWindowRectExForDpi(&r, WS_OVERLAPPEDWINDOW, FALSE, 0, app.dpi);
+        AdjustWindowRectExForDpi(&r, WS_OVERLAPPEDWINDOW, TRUE, 0, app.dpi);
         limits->ptMinTrackSize = {r.right-r.left, r.bottom-r.top}; return 0;
     }
     case WM_TIMER:
@@ -590,8 +677,33 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         case ID_TOP:
             SetWindowPos(hwnd, Button_GetCheck(app.top) == BST_CHECKED ? HWND_TOPMOST : HWND_NOTOPMOST,
                          0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE); break;
+        case ID_SETTINGS: readFrequency(true); openShell(DialogKind::Settings); break;
+        case ID_ABOUT: readFrequency(true); openShell(DialogKind::About); break;
+        case ID_UPDATE: readFrequency(true); openShell(DialogKind::Update); break;
         case ID_CLOSE: PostMessageW(hwnd, WM_CLOSE, 0, 0); break;
         } return 0;
+    case WM_UPDATE_READY: refreshUpdateDialog(); return 0;
+    case WM_NOTIFY: {
+        LRESULT result=0;
+        if (app.theme.handleNotify(lParam,result)) return result;
+        break;
+    }
+    case WM_DRAWITEM: {
+        const auto& item=*reinterpret_cast<DRAWITEMSTRUCT*>(lParam);
+        if (drawMenuItem(item) || app.theme.handleDrawItem(item)) return TRUE;
+        break;
+    }
+    case WM_MEASUREITEM: {
+        auto& item=*reinterpret_cast<MEASUREITEMSTRUCT*>(lParam);
+        if (measureMenuItem(item) || app.theme.handleMeasureItem(item)) return TRUE;
+        break;
+    }
+    case WM_MENUCHAR: return menuMnemonic(wParam,reinterpret_cast<HMENU>(lParam));
+    case WM_NCPAINT: case WM_NCACTIVATE: {
+        const LRESULT result=DefWindowProcW(hwnd,message,wParam,lParam); paintMenuBar(hwnd); return result;
+    }
+    case WM_SETTINGCHANGE: case WM_THEMECHANGED: case WM_SYSCOLORCHANGE:
+        applyAppearance(app.displayTheme); return 0;
     case WM_HOTKEY: if (wParam == HOTKEY_PAUSE) togglePause(); return 0;
     case WM_POWERBROADCAST:
         if (wParam == PBT_APMSUSPEND) { app.suspended = true; app.audio.setSuspended(true); app.signal(); }
@@ -602,7 +714,8 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         if (wParam == WTS_SESSION_UNLOCK || wParam == WTS_SESSION_LOGON) { app.locked = false; ++app.revision; app.signal(); }
         return 0;
     case WM_ERASEBKGND: return 1;
-    case WM_CTLCOLORBTN: SetBkMode(reinterpret_cast<HDC>(wParam), TRANSPARENT); return reinterpret_cast<LRESULT>(GetStockObject(HOLLOW_BRUSH));
+    case WM_CTLCOLORBTN: case WM_CTLCOLOREDIT: case WM_CTLCOLORSTATIC: case WM_CTLCOLORLISTBOX:
+        return reinterpret_cast<LRESULT>(app.theme.colorControl(reinterpret_cast<HDC>(wParam),reinterpret_cast<HWND>(lParam),message));
     case WM_PRINTCLIENT: {
         RECT r{}; GetClientRect(hwnd, &r); drawUi(reinterpret_cast<HDC>(wParam), r.right,r.bottom); return 0;
     }
@@ -619,12 +732,19 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         if (wParam) app.shutdown();
         else { app.suspended = false; ++app.revision; app.signal(); }
         return 0;
-    case WM_CLOSE: app.shutdown(); DestroyWindow(hwnd); return 0;
+    case WM_CLOSE:
+        readFrequency(true); app.stop=true;
+        if (app.dialog) closeShell(false);
+        app.shutdown(); DestroyWindow(hwnd); return 0;
     case WM_DESTROY:
         KillTimer(hwnd,1);
         if (app.hotkey) UnregisterHotKey(hwnd,HOTKEY_PAUSE);
         if (!app.renderTest) WTSUnRegisterSessionNotification(hwnd);
         PostQuitMessage(0); return 0;
+    case WM_NCDESTROY: {
+        const LRESULT result = DefWindowProcW(hwnd, message, wParam, lParam);
+        app.icons.clear(); return result;
+    }
     }
     return DefWindowProcW(hwnd,message,wParam,lParam);
 }
@@ -644,13 +764,6 @@ bool saveWindowPng(const std::wstring& path) {
         SetViewportOrgEx(dc,child.left,child.top,nullptr);
         SendMessageW(control,WM_PRINT,reinterpret_cast<WPARAM>(dc),PRF_CLIENT|PRF_CHILDREN|PRF_ERASEBKGND);
         RestoreDC(dc,saved);
-        // A hidden themed ComboBox prints its frame, but not its selection.
-        // The regular on-screen control paints this itself.
-        if (control == app.combo) {
-            wchar_t label[512]{}; GetWindowTextW(control,label,512);
-            RECT selection{child.left+app.scale(7),child.top+app.scale(2),child.right-app.scale(24),child.bottom-app.scale(2)};
-            drawText(dc,label,selection,app.font,INK);
-        }
     }
     SelectObject(dc,old);
     const CLSID png = {0x557cf406,0x1a04,0x11d3,{0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e}};
@@ -658,6 +771,32 @@ bool saveWindowPng(const std::wstring& path) {
     { Gdiplus::Bitmap image(bitmap,nullptr); ok = image.Save(path.c_str(),&png,nullptr) == Gdiplus::Ok; }
     DeleteObject(bitmap); DeleteDC(dc); ReleaseDC(app.window,screen); return ok;
 }
+bool saveCompleteWindowPng(HWND window,const std::wstring& path) {
+    RECT bounds{}; GetWindowRect(window,&bounds);
+    const int width=bounds.right-bounds.left, height=bounds.bottom-bounds.top;
+    HDC screen=GetDC(window), dc=CreateCompatibleDC(screen);
+    HBITMAP bitmap=CreateCompatibleBitmap(screen,width,height);
+    HGDIOBJ old=SelectObject(dc,bitmap);
+    fillRect(dc,{0,0,width,height},app.palette.background);
+    SendMessageW(window,WM_PRINT,reinterpret_cast<WPARAM>(dc),PRF_NONCLIENT | PRF_CLIENT | PRF_CHILDREN | PRF_ERASEBKGND);
+    if (window==app.window) {
+        MENUBARINFO bar{}; bar.cbSize=sizeof(bar);
+        if (GetMenuBarInfo(window,OBJID_MENU,0,&bar)) {
+            RECT rect=bar.rcBar; OffsetRect(&rect,-bounds.left,-bounds.top); fillRect(dc,rect,app.palette.background);
+            for (int i=0; i<3; ++i) {
+                if (GetMenuItemRect(window,bar.hMenu,UINT(i),&rect)) {
+                    OffsetRect(&rect,-bounds.left,-bounds.top); paintMenuEntry(dc,rect,menuEntries[size_t(i)],false,false,false);
+                }
+            }
+        }
+    }
+    SelectObject(dc,old);
+    const CLSID png={0x557cf406,0x1a04,0x11d3,{0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e}};
+    bool ok=false;
+    { Gdiplus::Bitmap value(bitmap,nullptr); ok=value.Save(path.c_str(),&png,nullptr)==Gdiplus::Ok; }
+    DeleteObject(bitmap); DeleteDC(dc); ReleaseDC(window,screen); return ok;
+}
+
 int renderTests(const std::wstring& directory) {
     Gdiplus::GdiplusStartupInput input; ULONG_PTR token = 0;
     if (Gdiplus::GdiplusStartup(&token,&input,nullptr) != Gdiplus::Ok) return 2;
@@ -707,6 +846,57 @@ int renderTests(const std::wstring& directory) {
     Button_SetCheck(app.audioCheck, BST_UNCHECKED);
     SendMessageW(app.window, WM_COMMAND, ID_AUDIO, 0);
     ok = !app.audio.enabled && ok;
+    ok = Button_GetCheck(app.top)==BST_UNCHECKED && app.selected.empty() && ok;
+    // Deterministic UI tests never read/write the user's profile or access HTTP.
+    // Exercise palette changes, scaled geometry and real owner/child dialogs.
+    for (const UINT dpi : {96u,144u,192u}) {
+        RECT bounds{0,0,MulDiv(800,int(dpi),96),MulDiv(908,int(dpi),96)};
+        AdjustWindowRectExForDpi(&bounds,WS_OVERLAPPEDWINDOW,TRUE,0,dpi);
+        SendMessageW(app.window,WM_DPICHANGED,MAKEWPARAM(dpi,dpi),reinterpret_cast<LPARAM>(&bounds));
+        for (const auto id : {morse::ThemeId::System,morse::ThemeId::Light,morse::ThemeId::Dark,
+                              morse::ThemeId::Midnight,morse::ThemeId::Amber,morse::ThemeId::Matrix}) {
+            const unsigned revision=app.revision.load(); const unsigned frequency=app.audio.frequency.load();
+            applyAppearance(id);
+            const std::wstring name(morse::themeIdName(id),morse::themeIdName(id)+strlen(morse::themeIdName(id)));
+            ok=saveWindowPng(directory+L"\\theme-"+name+L"-"+std::to_wstring(dpi)+L".png") && ok;
+            ok=app.revision==revision && app.audio.frequency==frequency && !app.audio.enabled && ok;
+        }
+    }
+    RECT bounds{0,0,800,908}; AdjustWindowRectExForDpi(&bounds,WS_OVERLAPPEDWINDOW,TRUE,0,96);
+    SendMessageW(app.window,WM_DPICHANGED,MAKEWPARAM(96,96),reinterpret_cast<LPARAM>(&bounds));
+    applyAppearance(morse::ThemeId::Matrix);
+    ok=saveCompleteWindowPng(app.window,directory+L"\\menu-matrix.png") && ok;
+    for (const auto id : {morse::ThemeId::Light,morse::ThemeId::Dark,morse::ThemeId::Midnight,morse::ThemeId::Amber,morse::ThemeId::Matrix}) {
+        applyAppearance(id);
+        const std::wstring name(morse::themeIdName(id),morse::themeIdName(id)+strlen(morse::themeIdName(id)));
+        openShell(DialogKind::Settings);
+        ok=saveCompleteWindowPng(app.dialog,directory+L"\\settings-"+name+L".png") && ok;
+        SendMessageW(shell.choice,CB_SETCURSEL,WPARAM(morse::ThemeId::Light),0);
+        SendMessageW(app.dialog,WM_COMMAND,MAKEWPARAM(ID_THEME,CBN_SELCHANGE),reinterpret_cast<LPARAM>(shell.choice));
+        ok=app.displayTheme==morse::ThemeId::Light && ok;
+        SendMessageW(app.dialog,WM_COMMAND,IDCANCEL,0);
+        ok=!app.dialog && app.displayTheme==id && IsWindowEnabled(app.window) && ok;
+        openShell(DialogKind::About);
+        ok=saveCompleteWindowPng(app.dialog,directory+L"\\about-"+name+L".png") && ok;
+        closeShell(false);
+    }
+    openShell(DialogKind::Settings);
+    applyAppearance(morse::ThemeId::Midnight);
+    SendMessageW(app.dialog,WM_COMMAND,IDOK,0);
+    ok=app.settings.theme==morse::ThemeId::Midnight && !app.dialog && ok;
+    openShell(DialogKind::Update);
+    ok=saveCompleteWindowPng(app.dialog,directory+L"\\update-checking.png") && ok;
+    const uint64_t updateDeadline=GetTickCount64()+1000;
+    while (app.updates.running() && GetTickCount64()<updateDeadline) Sleep(5);
+    MSG updateMessage{};
+    while (PeekMessageW(&updateMessage,app.window,WM_UPDATE_READY,WM_UPDATE_READY,PM_REMOVE))
+        DispatchMessageW(&updateMessage);
+    ok=app.updates.result().state==morse::UpdateState::Available && IsWindowEnabled(shell.release) && ok;
+    ok=saveCompleteWindowPng(app.dialog,directory+L"\\update-available.png") && ok;
+    closeShell(false);
+    openShell(DialogKind::Update); closeShell(false);
+    ok=(GetMenuState(GetMenu(app.window),ID_UPDATE,MF_BYCOMMAND) & MF_GRAYED)==0 && ok;
+    app.settings.theme=morse::ThemeId::System; applyAppearance(app.settings.theme);
     Gdiplus::GdiplusShutdown(token);
     // Smoke-test the real background thread and the actual window commands.
     // Demo mode guarantees that no serial port or system keyboard is touched.
@@ -757,9 +947,17 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int show) {
     for (int i=1; i<argc; ++i) {
         if (wcscmp(argv[i],L"--demo") == 0) app.demo = true;
         else if (wcscmp(argv[i],L"--render-test") == 0 && i+1<argc) { app.renderTest = true; renderDirectory = argv[++i]; }
+        else if (wcscmp(argv[i],L"--ui-test") == 0 && i+1<argc) {
+            app.uiTest=true; app.demo=true; app.settingsFile=argv[++i];
+        }
         else { LocalFree(argv); return 64; }
     }
     LocalFree(argv);
+    if (!app.renderTest) {
+        if (!app.uiTest) app.settingsFile=morse::settingsPath();
+        app.settings=morse::loadSettings(app.settingsFile);
+    }
+    app.audio.frequency=app.settings.frequency;
     HANDLE instanceLock = nullptr;
     if (!app.renderTest && !app.demo) {
         instanceLock = CreateMutexW(nullptr, TRUE, L"Local\\JunkerMorseBridge-v1");
@@ -769,17 +967,22 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int show) {
             CloseHandle(instanceLock); return 0;
         }
     }
-    INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_STANDARD_CLASSES | ICC_UPDOWN_CLASS}; InitCommonControlsEx(&controls);
+    INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_STANDARD_CLASSES | ICC_UPDOWN_CLASS | ICC_LINK_CLASS}; InitCommonControlsEx(&controls);
     WNDCLASSEXW cls{}; cls.cbSize = sizeof(cls); cls.lpfnWndProc = windowProc; cls.hInstance = instance;
-    cls.hCursor = LoadCursorW(nullptr,IDC_ARROW); cls.hIcon = LoadIconW(nullptr,IDI_APPLICATION);
+    cls.hCursor = LoadCursorW(nullptr,IDC_ARROW);
+    cls.hIcon = LoadIconW(instance,MAKEINTRESOURCEW(IDI_MORSEBRIDGE));
+    if (!cls.hIcon) cls.hIcon = LoadIconW(nullptr,IDI_APPLICATION);
     cls.lpszClassName = CLASS_NAME;
     if (!RegisterClassExW(&cls)) { if (instanceLock) CloseHandle(instanceLock); return 1; }
+    WNDCLASSEXW dialogClass=cls;
+    dialogClass.lpfnWndProc=shellProc; dialogClass.lpszClassName=SHELL_CLASS_NAME;
+    if (!RegisterClassExW(&dialogClass)) { if (instanceLock) CloseHandle(instanceLock); return 1; }
     app.dpi = GetDpiForSystem();
     RECT size{0,0,app.scale(800),app.scale(908)};
-    AdjustWindowRectExForDpi(&size,WS_OVERLAPPEDWINDOW,FALSE,0,app.dpi);
+    AdjustWindowRectExForDpi(&size,WS_OVERLAPPEDWINDOW,TRUE,0,app.dpi);
     HWND window = CreateWindowExW(0,CLASS_NAME,app.demo ? L"MorseBridge – Demo (ohne Tastaturausgabe)" : L"MorseBridge – Junker M.T.",
         WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN, CW_USEDEFAULT,CW_USEDEFAULT,size.right-size.left,size.bottom-size.top,
-        nullptr,nullptr,instance,nullptr);
+        nullptr,makeMenu(),instance,nullptr);
     if (!window) { if (instanceLock) CloseHandle(instanceLock); return 1; }
     if (app.renderTest) return renderTests(renderDirectory);
     app.wake = CreateEventW(nullptr,FALSE,FALSE,nullptr);
@@ -789,7 +992,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int show) {
     ShowWindow(window,show); UpdateWindow(window);
     MSG message{};
     while (GetMessageW(&message,nullptr,0,0) > 0) {
-        if (!IsDialogMessageW(window,&message)) { TranslateMessage(&message); DispatchMessageW(&message); }
+        if (message.message==WM_KEYDOWN && message.wParam==VK_RETURN && GetFocus()==app.frequency) {
+            readFrequency(true); continue;
+        }
+        if (!(app.dialog && IsDialogMessageW(app.dialog,&message)) && !IsDialogMessageW(window,&message)) {
+            TranslateMessage(&message); DispatchMessageW(&message);
+        }
     }
     app.shutdown();
     if (instanceLock) CloseHandle(instanceLock);

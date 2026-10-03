@@ -1,6 +1,7 @@
 # Prüfung vor einer öffentlichen Veröffentlichung
 
-Stand: **03.10.2026**. Annahme: nichtkommerzielles Hobbyprojekt, zunächst nur
+Stand der ursprünglichen Vorprüfung: **03.10.2026**; Ergänzung für 1.2.2:
+**04.10.2026**. Annahme: nichtkommerzielles Hobbyprojekt, zunächst nur
 Quellcode und kostenlose Downloads, keine verkauften Fertiggeräte. Dies ist
 eine dokumentierte Vorprüfung anhand öffentlicher Primärquellen, **keine
 anwaltliche Rechtsberatung, vollständige Rechteklärung oder Freigabebescheinigung**.
@@ -64,9 +65,14 @@ Datenblattabbildungen übernehmen. Im Projekt sind Datenblätter verlinkt, nicht
 als fremde PDF-/Bilddateien mitverteilt; Arduino-Markenhinweis ergänzt.
 [Arduino: Trademark & Copyright](https://www.arduino.cc/en/trademark).
 
-Die Anwendung hat nach dem geprüften Quellstand keine Telemetrie und benötigt
-keinen Netzwerkzugriff; sie verarbeitet COM- und Tastenzustände lokal. Das ist
-keine generelle Befreiung von Datenschutzpflichten bei späteren Änderungen.
+Die Anwendung verarbeitet COM- und Tastenzustände lokal und hat keine Telemetrie.
+Ab 1.2.2 benötigt ausschließlich die ausdrücklich gestartete Updateprüfung
+Netzwerkzugriff auf die öffentliche GitHub-Releases-API. GitHub erhält dabei die
+üblichen Verbindungsdaten und eine Programm-/Versionskennung; COM-, Kontakt-
+und Histogrammdaten werden nicht übertragen. Die lokalen Funktionen benötigen
+weiterhin keine Internetverbindung. Theme und Frequenz werden unter
+`%LOCALAPPDATA%\MorseBridge\settings.ini` gespeichert. Das ist keine generelle
+Befreiung von Datenschutzpflichten bei späteren Änderungen.
 Zur Veröffentlichung werden Quellen, Git-Metadaten, Screenshots und Downloads
 auf private Angaben geprüft. Eigene Beiträge verwenden den Alias **Auragant**;
 Git benötigt eine technische Autoradresse, dafür wird ausschließlich die
@@ -111,6 +117,19 @@ gelten Meldepflichten seit 11.09.2026, die wesentlichen übrigen Pflichten ab
 - [x] Öffentliche Sichtbarkeit vom Eigentümer ausdrücklich freigegeben.
 - [x] Repository öffentlich unter Auragant/Morsetaste bereitgestellt.
 
+### Zusätzliche Release-Freigabe 1.2.2
+
+Die bisherigen Häkchen dokumentieren die frühere Veröffentlichung. Für die neue
+EXE sind erneut erforderlich:
+
+- [x] Lokalen Windows-Build, 559 automatische Prüfungen, GUI-/Worker-Test und eingebettete Iconressourcen erneut geprüft.
+- [ ] Vollständige praktische Theme-/GUI-Sichtprüfung einschließlich Monitorwechsel und Kontrastmodus bestätigen.
+- [ ] User-Test der konkret zu veröffentlichenden 1.2.2-EXE bestätigen.
+- [ ] Security checks und CodeQL für den Veröffentlichungsstand erfolgreich prüfen.
+- [ ] Quellstand und SHA-256 der getesteten EXE festhalten; Paket ohne EXE-Neubuild erstellen.
+- [ ] Paketinhalt, EXE-/Produktversion, Build-Zeitpunkt und Quellenzuordnung prüfen.
+- [ ] Erst danach Tag/Release und Downloads veröffentlichen.
+
 ### Datenschutz und Meldeweg
 
 Es werden keine persönlichen Kontaktdaten des Projektverantwortlichen als
@@ -132,8 +151,9 @@ Bei kostenlosem privatem Hobbyumfang sind die Punkte zu kommerziellem Angebot
 oben bedingt relevant, nicht pauschal zusätzliche Release-Blocker. Eine spätere
 kommerzielle Bereitstellung oder Hardwareverteilung erfordert eine neue Prüfung.
 
-Ergebnis: Die Freigabepunkte für diesen nichtkommerziellen Hobbyumfang sind
-abgearbeitet. Lizenztexte, LLM-Hinweis und die zugehörigen Quellen sind
+Ergebnis der früheren Vorprüfung: Die allgemeinen Freigabepunkte für diesen
+nichtkommerziellen Hobbyumfang sind abgearbeitet. Die zusätzlichen technischen
+Freigabepunkte für 1.2.2 sind noch offen. Lizenztexte, LLM-Hinweis und die zugehörigen Quellen sind
 Bestandteil des Release-Pakets. Eine uneingeschränkte rechtliche Unbedenklichkeit
 wird nicht behauptet; kommerzielle Bereitstellung oder Hardwareverteilung
 erfordern eine neue Prüfung.

@@ -6,5 +6,5 @@ $images = Join-Path $projectRoot 'build/gui'
 New-Item -ItemType Directory -Force -Path $images | Out-Null
 $process = Start-Process -FilePath $exe -ArgumentList @('--render-test', ('"' + $images + '"')) -WindowStyle Hidden -PassThru -Wait
 if ($process.ExitCode -ne 0) { throw "GUI / thread test failed: exit $($process.ExitCode)" }
-Write-Host 'PASS: GUI, COM selection, demo worker, pause/resume, close and thread shutdown.'
+Write-Host 'PASS: GUI render checks, COM selection, demo worker, pause/resume, close and thread shutdown.'
 Get-ChildItem -LiteralPath $images | Select-Object Name,Length

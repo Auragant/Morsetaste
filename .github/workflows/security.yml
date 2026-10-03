@@ -39,7 +39,7 @@ jobs:
             --enable=warning,performance,portability --error-exitcode=1 \
             --suppress=missingIncludeSystem -DUNICODE -D_UNICODE \
             -D_WIN32_WINNT=0x0A00 -Itests/arduino_stub \
-            windows/main.cpp tests/core_tests.cpp tests/tone_tests.cpp tests/audio_core_tests.cpp tests/audio_output_tests.cpp tests/firmware_tests.cpp
+            windows/main.cpp tests/core_tests.cpp tests/tone_tests.cpp tests/audio_core_tests.cpp tests/audio_output_tests.cpp tests/firmware_tests.cpp tests/update_tests.cpp tests/settings_tests.cpp
 
   secrets:
     name: Secrets in complete Git history
@@ -67,7 +67,7 @@ jobs:
           "$SCANNER_DIR/gitleaks" git --redact=100 --no-banner --log-opts='--all' .
 
   tests:
-    name: Protocol and firmware tests with sanitizers
+    name: Core, update, settings and firmware tests with sanitizers
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -92,6 +92,14 @@ jobs:
             -fsanitize=address,undefined -fno-omit-frame-pointer \
             tests/audio_core_tests.cpp -o build/audio_core_tests
           ./build/audio_core_tests
+          g++ -std=c++17 -Wall -Wextra -Wpedantic -Werror -g \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            tests/update_tests.cpp -o build/update_tests
+          ./build/update_tests
+          g++ -std=c++17 -Wall -Wextra -Wpedantic -Werror -g \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            tests/settings_tests.cpp -o build/settings_tests
+          ./build/settings_tests
           ./build/firmware_tests
           node tests/security_notify_tests.cjs
 

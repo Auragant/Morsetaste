@@ -8,6 +8,11 @@ Text steht in [LICENSE](LICENSE). Eigene Projektdokumentation steht ebenfalls
 unter dieser Lizenz, soweit daran eigene Rechte bestehen. Unveränderte fremde
 Lizenztexte und Drittanbieter-Code behalten ihre jeweiligen Bedingungen.
 
+Das App-Icon und seine PNG-/ICO-Dateien unter `windows/assets/` wurden mit
+dem integrierten OpenAI Imagegen erzeugt. Motivwahl und Einbindung stammen aus
+diesem Projekt; Generierungsprompt und PNG-Master sind beigefügt. Die Dateien
+werden ebenfalls unter GPL-3.0-only angeboten, soweit eigene Rechte bestehen.
+
 Copyright (C) 2026 Auragant, soweit urheberrechtlich geschützte eigene
 Beiträge vorliegen. Die LLM-unterstützte Entstehung ist in
 [DISCLAIMER.md](DISCLAIMER.md) offengelegt; damit wird kein ausschließlicher
