@@ -1,11 +1,13 @@
 # MorseBridge – Junker M.T. → Space
 
-Version **1.2.1** – Teststand; Veröffentlichung erst nach dem User-Test.
+Version **1.2.1** – User-Test am 04.10.2026 bestanden. Ab dieser Version entfällt
+der bisherige Zusatz `p`.
 
 **Hinweis zu 1.2.0p:** Rauer/verzerrter PC-Mithörton und ein Windows-Absturz
 wurden gemeldet. Der Zusammenhang mit dem Absturz ist ungeklärt.
-Den PC-Mithörton in **1.2.0p ausgeschaltet lassen**. 1.2.1 überarbeitet die
-Ausgabe auf WASAPI; Hör- und Stabilitätstest am betroffenen Aufbau stehen noch aus.
+Den PC-Mithörton in **1.2.0p ausgeschaltet lassen** und auf 1.2.1 aktualisieren.
+Die WASAPI-Ausgabe von 1.2.1 wurde vom Eigentümer am optischen Windows-Ausgang
+erfolgreich getestet. Alte Binärdownloads wurden zurückgezogen.
 
 Die Junker-Morsetaste steuert über einen Arduino Nano mit ATmega328P und CH340C
 die Leertaste des aktiven Windows-Programms. Die kleine C++-Anwendung läuft auch
@@ -190,6 +192,8 @@ mit dem echten AVR-Compiler für den Nano übersetzt. Der Eigentümer hat die re
 Nano-/Junker-/Summer-Kette mit seinem Windows-Zielprogramm erfolgreich praktisch
 getestet und dies am 03.10.2026 bestätigt. Dies gilt für den getesteten Aufbau,
 nicht als Garantie für alle Geräte oder Zielprogramme.
+Den User-Test der überarbeiteten PC-Audioausgabe von 1.2.1 hat er am
+04.10.2026 als bestanden bestätigt; die veröffentlichte EXE ist dieselbe Datei.
 
 Prüfergebnisse: [TESTING.md](TESTING.md) · Änderungen: [CHANGELOG.md](CHANGELOG.md).
 

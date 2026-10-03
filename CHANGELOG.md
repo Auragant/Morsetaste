@@ -1,6 +1,6 @@
 # Änderungen
 
-## 1.2.1 – Teststand – 04.10.2026
+## 1.2.1 – 04.10.2026
 
 - PC-Mithörton von waveOut auf ereignisgesteuertes WASAPI im Shared-Modus umgestellt.
   Geräteformat und Puffertakt stammen von der Windows-Audioengine; Multimedia-
@@ -9,10 +9,14 @@
   Abtastraten, Float- und PCM-Formate, Stereoausgabe auf Front links/rechts.
 - Puffer vor dem Start gefüllt; Nachfüllen nur im verfügbaren Bereich. Audiofehler
   deaktivieren die Ausgabe ohne automatische Geräte-Neustartschleife.
-- Stumme Audio-Thread-/Formatprüfungen erweitert. Hör-/Stabilitätstest am
-  optischen Ausgang durch den Eigentümer ist vor einem Release erforderlich.
+- Stumme Audio-Thread-/Formatprüfungen erweitert. Der Eigentümer hat den
+  User-Test am optischen Windows-Ausgang am 04.10.2026 als bestanden bestätigt.
 - Warnhinweis zum PC-Ton von 1.2.0p veröffentlicht: Rauer Klang und Windows-
   Einfrieren/Neustart mit 0xD1 gemeldet; kausaler Zusammenhang nicht nachgewiesen.
+- Versionszusatz `p` entfällt ab 1.2.1. Alte Binärreleases, Testkopien und
+  doppelte Dokumentation entfernt; Quellhistorie und historische Tags erhalten.
+- Download auf ein vollständiges ZIP mit Prüfsummen beschränkt. Paketbau entfernt
+  seine temporäre Arbeitskopie nach erfolgreichem Abschluss.
 
 ## 1.2.0p – Histogramm und PC-Mithörton – 03.10.2026
 
@@ -44,7 +48,7 @@
 - Anschlussplan und zusätzliche Firmware-Tests für Summer und Schalter.
 - Versioniertes Komplettpaket enthält EXE, Sketch, HEX, Quellen und Dokumentation.
 
-`p` steht für Public und ist ein projektspezifischer Versionszusatz.
+Frühere Versionen verwendeten den Zusatz `p` für Public; ab 1.2.1 entfällt er.
 
 ## 1.0.0 – 01.10.2026
 

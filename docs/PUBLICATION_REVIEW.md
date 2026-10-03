@@ -25,11 +25,11 @@ Verantwortlich für dieses Projekt ist der GitHub-Alias **Auragant**.
    werden dem neuen Komplettpaket beigefügt. GCC-Nutzung macht eigenen Code
    nicht automatisch GPL-pflichtig; die GPLv3-Auswahl hier ist bewusst getroffen.
    [GNU: GCC Runtime Library Exception und FAQ](https://www.gnu.org/licenses/gcc-exception-3.1-faq.html).
-4. **Release `v1.1.0p`: vollständiges Quellen-/Binärpaket.** Das zugehörige
+4. **Vollständiges Quellen-/Binärpaket.** Das jeweilige
    Komplett-ZIP enthält Programm, Firmware, eigene und verwendete Core-Quellen,
    Buildskripte sowie Lizenzhinweise. Zu separat angebotenen EXE-/HEX-Dateien
    wird dieses Paket am selben Downloadort kostenfrei bereitgestellt. Der
-   Public-Versionszusatz ist keine rechtliche Freigabebescheinigung.
+   Versionsname ist keine rechtliche Freigabebescheinigung.
 
 ## LLM, Urheberrecht und mögliche fremde Rechte
 
@@ -99,7 +99,7 @@ gelten Meldepflichten seit 11.09.2026, die wesentlichen übrigen Pflichten ab
 - [x] LLM-Mitwirkung, technische Grenzen und zwingende Haftung offengelegt.
 - [x] Paketbau um Core-Quellen und Lizenztexte erweitert.
 - [x] Neuen Paketbau lokal mit Binärdateien, Core-Quellen und Lizenztexten geprüft.
-- [x] Geprüften Komplettrelease aus dem zugehörigen Quellstand als `v1.1.0p` angelegt.
+- [x] Ersten geprüften Komplettrelease aus dem zugehörigen Quellstand angelegt.
 - [x] Veröffentlichung ausschließlich unter dem Alias Auragant beauftragt.
 - [x] Bereinigte Quellen, Binärdateien und Komplettpaket ohne gefundene persönliche Angaben des Eigentümers geprüft.
 - [x] Eigene Git-Commits und Tag-Metadaten ausschließlich Auragant/GitHub-Noreply.
