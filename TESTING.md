@@ -38,8 +38,10 @@ SHA-256 der lokal geprüften Test-EXE:
 514ec7e6b8b877697ebd34881a4002e6f38fbe069161a6a30ca0c8b785abb7a9
 ```
 
-Der lokale Quellstand basiert auf `f801cff1bdf816a765b57966b255c5d8f8d907f9`
-mit den im vollständigen Testpaket enthaltenen 1.2.2-Änderungen. Prüfsummen liegen
+Quellstand der Test-EXE: `6367112f772ecadb1e7dcf4eb5189743a3265dd2`
+(lokaler Git-Commit, ausgehend von `f801cff1bdf816a765b57966b255c5d8f8d907f9`).
+Danach wird nur die Dokumentation des Prüfstands ergänzt; die EXE bleibt unverändert.
+Prüfsummen liegen
 im Testpaket und daneben unter `dist/SHA256SUMS.txt`. Es wurden keine Änderungen,
 Issues, PRs, Pushes oder Releases auf GitHub veröffentlicht.
 
