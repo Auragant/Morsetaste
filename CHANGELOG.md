@@ -1,5 +1,19 @@
 # Änderungen
 
+## 1.2.1 – Teststand – 04.10.2026
+
+- PC-Mithörton von waveOut auf ereignisgesteuertes WASAPI im Shared-Modus umgestellt.
+  Geräteformat und Puffertakt stammen von der Windows-Audioengine; Multimedia-
+  Scheduling für den Audio-Thread. Die festen drei 5-ms-Puffer entfallen.
+- Sinus mit weicher 3-ms-Kosinus-Hüllkurve; Unterstützung für gerätespezifische
+  Abtastraten, Float- und PCM-Formate, Stereoausgabe auf Front links/rechts.
+- Puffer vor dem Start gefüllt; Nachfüllen nur im verfügbaren Bereich. Audiofehler
+  deaktivieren die Ausgabe ohne automatische Geräte-Neustartschleife.
+- Stumme Audio-Thread-/Formatprüfungen erweitert. Hör-/Stabilitätstest am
+  optischen Ausgang durch den Eigentümer ist vor einem Release erforderlich.
+- Warnhinweis zum PC-Ton von 1.2.0p veröffentlicht: Rauer Klang und Windows-
+  Einfrieren/Neustart mit 0xD1 gemeldet; kausaler Zusammenhang nicht nachgewiesen.
+
 ## 1.2.0p – Histogramm und PC-Mithörton – 03.10.2026
 
 - Dynamisches Histogramm der Kontaktimpulslängen über die letzten fünf Minuten.

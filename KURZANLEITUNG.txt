@@ -1,4 +1,4 @@
-MORSEBRIDGE 1.2.0p – JUNKER M.T. / ARDUINO NANO / WINDOWS
+MORSEBRIDGE 1.2.1 – JUNKER M.T. / ARDUINO NANO / WINDOWS
 
 1. ANSCHLIESSEN
    Beide potentialfreien Schaltkontakte der Junker an D2 und GND des Nano.
@@ -34,6 +34,9 @@ BEDIENUNG
    Frequenz standardmäßig 650 Hz; Zähler/Zahleneingabe von 400 bis 1000 Hz.
    Ton folgt dem Kontakt, auch bei pausierter Ausgabe; Lautstärke über Windows.
    Frequenz und Häkchen werden nicht dauerhaft gespeichert.
+   1.2.1 ist zunächst eine Testversion; Release erst nach bestandenem User-Test.
+   Hinweis zu 1.2.0p: Rauer Klang und Windows-Absturz gemeldet, Ursache ungeklärt.
+   In 1.2.0p den PC-Mithörton ausgeschaltet lassen.
    Das Programm funktioniert im Hintergrund und minimiert.
    „Immer im Vordergrund“ hält die Anzeige über dem Zielfenster sichtbar.
    Strg + Alt + F12 oder die Pause-Schaltfläche pausiert/setzt die Ausgabe fort.

@@ -1,5 +1,32 @@
 # Prüfstand
 
+## Version 1.2.1 – Teststand – 04.10.2026
+
+- Windows-Build mit Warnungen als Fehlern; 85 Kerncode-, 16 Sinus-/Hüllkurven-,
+  150 Format-/Puffer- und 37 Firmwareprüfungen bestanden.
+- 30 stumme Prüfungen führen den echten Audio-Thread gegen einen simulierten
+  Transport aus: Startfüllung, freie Pufferbereiche, Kontakt/Stereo/Silence,
+  Aus-/Einschalten, Suspend/Resume, Beenden und Fehler ohne Neustartschleife.
+- Formate: 44,1/48/96/192 kHz, Float32/64, PCM16/24/32 und 24 gültige Bits im
+  32-Bit-Container; Sinusform, Frequenz, Kanalzuordnung, Hüllkurve und
+  Schreibgrenzen geprüft. Diese Tests prüfen keine realen Audiotreiber.
+- GUI-/Demo-Worker-Test erfolgreich und Darstellung visuell geprüft. Frequenz-
+  eingaben, Checkbox, Pause/Kontaktweitergabe und vollständiges Beenden geprüft.
+  EXE-/Produktversion 1.2.1; nur Windows-System-DLLs, jetzt OLE32/AVRT für Audio.
+- 11 Benachrichtigungs-Szenarien erfolgreich. Firmwarefunktion unverändert;
+  die bisherige HEX-Datei wird mit dem passenden Sketch/Quellenpaket mitgeliefert.
+- Kein erneuter realer Audio-Geräte-/Hörtest durch den Agenten nach dem gemeldeten
+  Einfrieren. Der User-Test am optischen Windows-Ausgang ist noch ausstehend;
+  ohne diesen Test keine Veröffentlichung von 1.2.1.
+
+### Nachmeldung zu 1.2.0p
+
+Der Eigentümer meldete rauen/unpassenden Klang und ein Einfrieren von Windows.
+Der nachfolgende Neustart wurde mit Bugcheck 0xD1 protokolliert. Welcher Treiber
+betroffen war und ob der Mithörton den Absturz auslöste, ist nicht geklärt.
+Die damaligen API-/Sinustests belegen keine durchgehend saubere Wiedergabe.
+Das GitHub-Release trägt einen Hinweis, den PC-Ton in 1.2.0p ausgeschaltet zu lassen.
+
 ## Version 1.2.0p – Histogramm und Windows-Mithörton – 03.10.2026
 
 - Windows-Build mit Warnungen als Fehlern erfolgreich; 85 Kerncode-,

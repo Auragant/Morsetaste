@@ -17,7 +17,7 @@ try {
     & $windres '-Iwindows' 'windows/app.rc' '-O' 'coff' '-o' 'build/app.res'
     if ($LASTEXITCODE -ne 0) { throw 'Resource compilation failed' }
     $flags = @('-std=c++17','-O2','-Wall','-Wextra','-Wpedantic','-Werror','-DUNICODE','-D_UNICODE','-D_WIN32_WINNT=0x0A00','-static','-static-libgcc','-static-libstdc++')
-    & $Compiler @flags '-mwindows' '-municode' 'windows/main.cpp' 'build/app.res' '-o' 'dist/MorseBridge.exe' '-lsetupapi' '-lcomctl32' '-lgdi32' '-luser32' '-ladvapi32' '-lwtsapi32' '-lshell32' '-luuid' '-lgdiplus' '-lwinmm'
+    & $Compiler @flags '-mwindows' '-municode' 'windows/main.cpp' 'build/app.res' '-o' 'dist/MorseBridge.exe' '-lsetupapi' '-lcomctl32' '-lgdi32' '-luser32' '-ladvapi32' '-lwtsapi32' '-lshell32' '-luuid' '-lgdiplus' '-lole32' '-lavrt'
     if ($LASTEXITCODE -ne 0) { throw 'C++ compilation failed' }
     if (-not $SkipTests) {
         & $Compiler @flags 'tests/core_tests.cpp' '-o' 'build/core_tests.exe'
@@ -28,6 +28,14 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Tone test compilation failed' }
         & './build/tone_tests.exe'
         if ($LASTEXITCODE -ne 0) { throw 'Tone tests failed' }
+        & $Compiler @flags 'tests/audio_core_tests.cpp' '-o' 'build/audio_core_tests.exe'
+        if ($LASTEXITCODE -ne 0) { throw 'Audio format test compilation failed' }
+        & './build/audio_core_tests.exe'
+        if ($LASTEXITCODE -ne 0) { throw 'Audio format tests failed' }
+        & $Compiler @flags 'tests/audio_output_tests.cpp' '-o' 'build/audio_output_tests.exe' '-lole32' '-luuid' '-lavrt'
+        if ($LASTEXITCODE -ne 0) { throw 'Audio thread test compilation failed' }
+        & './build/audio_output_tests.exe'
+        if ($LASTEXITCODE -ne 0) { throw 'Audio thread tests failed' }
         & $Compiler @flags '-Itests/arduino_stub' 'tests/firmware_tests.cpp' '-o' 'build/firmware_tests.exe'
         if ($LASTEXITCODE -ne 0) { throw 'Firmware test compilation failed' }
         & './build/firmware_tests.exe'

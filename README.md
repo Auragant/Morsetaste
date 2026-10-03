@@ -1,6 +1,11 @@
 # MorseBridge – Junker M.T. → Space
 
-Version **1.2.0p** – Public-Ausgabe (`p` = Public).
+Version **1.2.1** – Teststand; Veröffentlichung erst nach dem User-Test.
+
+**Hinweis zu 1.2.0p:** Rauer/verzerrter PC-Mithörton und ein Windows-Absturz
+wurden gemeldet. Der Zusammenhang mit dem Absturz ist ungeklärt.
+Den PC-Mithörton in **1.2.0p ausgeschaltet lassen**. 1.2.1 überarbeitet die
+Ausgabe auf WASAPI; Hör- und Stabilitätstest am betroffenen Aufbau stehen noch aus.
 
 Die Junker-Morsetaste steuert über einen Arduino Nano mit ATmega328P und CH340C
 die Leertaste des aktiven Windows-Programms. Die kleine C++-Anwendung läuft auch
@@ -81,6 +86,9 @@ pausiert ausschließlich die Tastaturausgabe; der Hardwareschalter schaltet den 
   im eigenen Fenster, im Hintergrund und bei pausierter Space-Ausgabe. Abbruch,
   Sperre, Standby und Beenden stoppen ihn. Lautstärke über Windows steuern.
   USB-, Windows- und Audiogeräte-Latenz beeinflussen den hörbaren Zeitpunkt.
+  Ab 1.2.1 erfolgt die Ausgabe mit WASAPI im gemeinsam genutzten Windows-Modus,
+  im Format des Standardgeräts und mit dessen Puffertakt. Audiofehler schalten
+  den PC-Mithörton ab; erneutes Einschalten versucht den Gerätezugriff erneut.
 - **Ausgabe pausieren:** gibt Space frei; Kontakt und Verlauf werden weiter angezeigt.
   **Strg + Alt + F12** schaltet die Pause auch im Hintergrund um. Ist diese
   Tastenkombination schon belegt, bleibt die Schaltfläche verfügbar.
@@ -145,7 +153,7 @@ In PowerShell im Projektordner:
 ./scripts/build-firmware.ps1            # danach ohne erneute Installation
 ./scripts/test-gui.ps1                  # GUI-/Hintergrundthread-Test ohne Eingaben
 ./scripts/package.ps1                   # versioniertes Komplettpaket erstellen
-./scripts/test-audio.ps1                # drei kurze Töne am Windows-Standardgerät prüfen
+./scripts/test-audio.ps1                # Audio-Thread gegen simuliertes Gerät prüfen (stumm)
 ```
 
 Werkzeuge und Arduino-Pakete bleiben unter `.tools/`. Es erfolgt keine
@@ -193,7 +201,7 @@ GitHub-Issue. Prüfungen, Grenzen und E-Mail-Einstellungen:
 [SECURITY.md](SECURITY.md).
 
 [Rechtliche Vorprüfung und Veröffentlichungs-Checkliste](docs/PUBLICATION_REVIEW.md).
-Das Komplettpaket `MorseBridge-1.2.0p-win64.zip` enthält zusätzlich
+Das Komplettpaket `MorseBridge-1.2.1-win64.zip` enthält zusätzlich
 die verwendeten Arduino-Core-Quellen und vollständigen Lizenzhinweise.
 Das Projekt wird unter dem GitHub-Alias **Auragant** veröffentlicht; es nennt
 keine persönliche Kontaktadresse des Projektverantwortlichen.

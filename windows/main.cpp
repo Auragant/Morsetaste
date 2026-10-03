@@ -202,7 +202,7 @@ void workerMain() {
     bool accepted = false, lastPhysical = false, lastOutput = false;
     HWND previousForeground = nullptr;
     auto disconnect = [&] {
-        app.audio.contact = false;
+        app.audio.setContact(false);
         state.pulses.interrupt();
         bridge.disconnect(); serial.close(); parser.reset(); accepted = false;
         state.port.clear();
@@ -224,7 +224,7 @@ void workerMain() {
     };
     while (!app.stop) {
         const uint64_t now = GetTickCount64();
-        app.audio.suspended = app.suspended || app.locked;
+        app.audio.setSuspended(app.suspended || app.locked);
         const HWND foreground = GetForegroundWindow();
         DWORD foregroundPid = 0; GetWindowThreadProcessId(foreground, &foregroundPid);
         const bool ownWindow = foregroundPid == GetCurrentProcessId();
@@ -254,7 +254,7 @@ void workerMain() {
             if (down != bridge.physicalDown || now - lastDemoFrame >= 100) {
                 state.pulses.receive(down, now);
                 bridge.receive(down, now); lastDemoFrame = now;
-                app.audio.contact = bridge.physicalDown;
+                app.audio.setContact(bridge.physicalDown);
             }
         } else {
             if (accepted && now - bridge.lastSeen >= morse::Bridge::timeoutMs) {
@@ -291,7 +291,7 @@ void workerMain() {
                     parser.feed(bytes.data(), bytes.size(), [&](bool down) {
                         state.pulses.receive(down, GetTickCount64());
                         bridge.receive(down, GetTickCount64());
-                        app.audio.contact = bridge.physicalDown;
+                        app.audio.setContact(bridge.physicalDown);
                         accepted = true;
                         state.status = L"Nano verbunden · " + state.port;
                         state.detail = L"JunkerSpace v1 · 115200 Baud · D2 ↔ GND";
@@ -314,7 +314,7 @@ void workerMain() {
             }
         }
         bridge.tick(GetTickCount64());
-        app.audio.contact = bridge.connected && bridge.physicalDown;
+        app.audio.setContact(bridge.connected && bridge.physicalDown);
         if (!bridge.connected) state.pulses.interrupt();
         state.pulses.prune(GetTickCount64());
         if (bridge.physicalDown != lastPhysical || bridge.outputDown != lastOutput) {
@@ -482,16 +482,17 @@ void drawUi(HDC dc, int width, int height) {
         text(L"Warte auf vollständige Kontaktimpulse ...", hx0+12, hy0+12, hx1-hx0-24, 24, app.font, MUTED);
     std::wstring footer = s.demo ? L"Demo aktiv: Der Verlauf ist simuliert; echte Tastaturausgabe ist ausgeschaltet."
                                  : L"Space geht an das aktive Programm – auch bei minimierter MorseBridge.";
-    if (app.audio.enabled && app.audio.error)
-        footer = L"PC-Mithörton nicht verfügbar · Windows-Audiogerät prüfen (Fehler " +
+    if (app.audio.error)
+        footer = L"PC-Mithörton deaktiviert · Windows-Audiogerät prüfen (Fehler " +
                  std::to_wstring(app.audio.error.load()) + L").";
     text(footer, 28, h-82, w-56, 22, app.font, MUTED);
     text(app.hotkey ? L"Strg + Alt + F12: Pause / Fortsetzen · Schließen beendet das Hilfsprogramm."
                     : L"Pause per Schaltfläche · Schließen beendet das Hilfsprogramm.", 28, h-56, w-56, 22, app.font, MUTED);
-    text(L"v1.2.0p · 5 ms Entprellung · 1 s Verbindungsüberwachung", 28, h-29, w-56, 18, app.labelFont, MUTED);
+    text(L"v1.2.1 · 5 ms Entprellung · 1 s Verbindungsüberwachung", 28, h-29, w-56, 18, app.labelFont, MUTED);
 }
 
 void syncControls(const Snapshot& s) {
+    Button_SetCheck(app.audioCheck, app.audio.enabled ? BST_CHECKED : BST_UNCHECKED);
     SetWindowTextW(app.pause, s.enabled ? L"Ausgabe pausieren" : L"Ausgabe fortsetzen");
     // Do not disturb an open dropdown or the user's selection.
     if (SendMessageW(app.combo, CB_GETDROPPEDSTATE, 0, 0)) return;
@@ -581,7 +582,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
             } break;
         case ID_REFRESH: ++app.revision; app.signal(); break;
         case ID_PAUSE: togglePause(); break;
-        case ID_AUDIO: app.audio.enabled = Button_GetCheck(app.audioCheck) == BST_CHECKED; break;
+        case ID_AUDIO: app.audio.setEnabled(Button_GetCheck(app.audioCheck) == BST_CHECKED); break;
         case ID_FREQUENCY:
             if (HIWORD(wParam) == EN_CHANGE) readFrequency(false);
             else if (HIWORD(wParam) == EN_KILLFOCUS) readFrequency(true);
@@ -593,11 +594,11 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         } return 0;
     case WM_HOTKEY: if (wParam == HOTKEY_PAUSE) togglePause(); return 0;
     case WM_POWERBROADCAST:
-        if (wParam == PBT_APMSUSPEND) { app.suspended = true; app.audio.suspended = true; app.signal(); }
+        if (wParam == PBT_APMSUSPEND) { app.suspended = true; app.audio.setSuspended(true); app.signal(); }
         if (wParam == PBT_APMRESUMEAUTOMATIC || wParam == PBT_APMRESUMESUSPEND) { app.suspended = false; ++app.revision; app.signal(); }
         return TRUE;
     case WM_WTSSESSION_CHANGE:
-        if (wParam == WTS_SESSION_LOCK || wParam == WTS_SESSION_LOGOFF) { app.locked = true; app.audio.suspended = true; app.signal(); }
+        if (wParam == WTS_SESSION_LOCK || wParam == WTS_SESSION_LOGOFF) { app.locked = true; app.audio.setSuspended(true); app.signal(); }
         if (wParam == WTS_SESSION_UNLOCK || wParam == WTS_SESSION_LOGON) { app.locked = false; ++app.revision; app.signal(); }
         return 0;
     case WM_ERASEBKGND: return 1;
@@ -613,7 +614,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         BitBlt(target,0,0,r.right,r.bottom,back,0,0,SRCCOPY);
         SelectObject(back,old); DeleteObject(bmp); DeleteDC(back); EndPaint(hwnd,&paint); return 0;
     }
-    case WM_QUERYENDSESSION: app.suspended = true; app.audio.suspended = true; app.signal(); return TRUE;
+    case WM_QUERYENDSESSION: app.suspended = true; app.audio.setSuspended(true); app.signal(); return TRUE;
     case WM_ENDSESSION:
         if (wParam) app.shutdown();
         else { app.suspended = false; ++app.revision; app.signal(); }
