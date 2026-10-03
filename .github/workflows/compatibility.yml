@@ -1,0 +1,124 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: Windows compatibility
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Monthly, away from the busy start of the hour; UTC.
+    - cron: '41 7 5 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows runtime (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Record Windows and runner image versions
+        run: |
+          $os = Get-CimInstance Win32_OperatingSystem
+          $details = "OS: $($os.Caption), version $($os.Version), build $($os.BuildNumber); runner image: $env:ImageOS / $env:ImageVersion"
+          Write-Host $details
+          Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value $details
+      - name: Download verified Windows build tools only
+        run: ./scripts/get-tools.ps1 -WindowsOnly
+      - name: Build production EXE and run all software tests on Windows
+        run: ./scripts/build.ps1
+      - name: Test the production GUI and Windows worker lifecycle
+        run: ./scripts/test-gui.ps1
+      - name: Test the latest published EXE on the updated Windows image
+        run: ./scripts/test-release.ps1
+      - name: Save GUI evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compatibility-${{ matrix.os }}
+          path: |
+            build/gui/*.png
+            build/gui-release/*.png
+          if-no-files-found: warn
+          retention-days: 14
+
+  sdk:
+    name: Microsoft compiler and current Windows SDK
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and test against the installed Microsoft SDK
+        shell: pwsh
+        run: ./scripts/build-msvc.ps1
+      - name: Save Microsoft build GUI evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compatibility-msvc
+          path: build/msvc/gui/*.png
+          if-no-files-found: warn
+          retention-days: 14
+
+  notify:
+    name: Notify repository owner on compatibility failure
+    needs: [windows, sdk]
+    if: >-
+      always() && github.event_name != 'pull_request' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    concurrency:
+      group: compatibility-notifications
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      # No checkout or execution of repository code in the privileged job.
+      - name: Create/update an assigned issue, or resolve it after a clean run
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          CHECK_RESULTS: ${{ toJSON(needs) }}
+        with:
+          script: |
+            const repo = context.repo;
+            const marker = '<!-- morsebridge-compatibility-monitor:v1 -->';
+            const runUrl = `${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${context.runId}`;
+            const results = JSON.parse(process.env.CHECK_RESULTS);
+            const failed = Object.entries(results).filter(([, v]) => v.result === 'failure').map(([k]) => k);
+            const clean = ['windows', 'sdk'].every(k => results[k]?.result === 'success');
+            const {data: branch} = await github.rest.repos.getBranch({...repo, branch: context.payload.repository.default_branch});
+            if (branch.commit.sha !== context.sha) {
+              core.notice('Veralteter Prüflauf: Issue-Status bleibt unverändert.');
+              return;
+            }
+            if (!failed.length && !clean) return;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {...repo, state: 'open', per_page: 100});
+            const existing = issues.find(i => !i.pull_request && i.user?.login === 'github-actions[bot]' && i.body?.includes(marker));
+            if (failed.length) {
+              const body = `${marker}\n@${repo.owner}: Die Windows-Kompatibilitätsprüfung ist fehlgeschlagen.\n\nBetroffene Prüfungen: **${failed.join(', ')}**.\n\n[Logs, Windows-Versionen und Prüfergebnisse](${runUrl}). Bitte prüfen, ob Windows-/SDK-Änderungen, Programmfehler oder ein Tool-/Downloadproblem die Ursache sind. Dieser Fehler beweist noch keine Inkompatibilität.\n\nEin vollständiger grüner Folgeprüflauf schließt dieses Issue automatisch.`;
+              if (existing) {
+                await github.rest.issues.createComment({...repo, issue_number: existing.number, body});
+              } else {
+                await github.rest.issues.create({...repo, title: '[Kompatibilität] Windows-Prüfung benötigt Aufmerksamkeit', body, assignees: [repo.owner]});
+              }
+            } else if (existing) {
+              await github.rest.issues.createComment({...repo, issue_number: existing.number, body: `Beide Windows-Laufzeitprüfungen und der Microsoft-SDK-Build sind wieder erfolgreich: [Prüflauf](${runUrl}). Hardware und Treiber des eigenen PCs sind damit nicht geprüft.`});
+              await github.rest.issues.update({...repo, issue_number: existing.number, state: 'closed', state_reason: 'completed'});
+            }

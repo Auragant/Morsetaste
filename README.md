@@ -197,6 +197,30 @@ Den User-Test der überarbeiteten PC-Audioausgabe von 1.2.1 hat er am
 
 Prüfergebnisse: [TESTING.md](TESTING.md) · Änderungen: [CHANGELOG.md](CHANGELOG.md).
 
+## Monatliche Windows-Kompatibilitätsprüfung
+
+[Windows compatibility](https://github.com/Auragant/Morsetaste/actions/workflows/compatibility.yml)
+prüft jeweils am **5. des Monats um 07:41 UTC** (08:41 Uhr MEZ / 09:41 Uhr MESZ),
+bei Änderungen auf `main`, bei Pull Requests und auf manuellen Aufruf:
+
+- Produktionsbuild und Softwaretests auf `windows-latest` und `windows-2022`.
+- Start und GUI-/Thread-Prüfung sowohl der neu gebauten als auch der zuletzt
+  veröffentlichten EXE auf den aktualisierten Windows-Systemen.
+- Zusätzlicher Build und Tests mit Microsofts installiertem C++-Compiler und
+  Windows-SDK auf `windows-latest`, um SDK-Änderungen zu erkennen.
+
+Fehler auf `main` erzeugen ein zugewiesenes GitHub-Issue; ein vollständiger grüner
+Folgelauf schließt es wieder. Windows-/Runner-Versionen, Logs und GUI-Bilder
+helfen bei der Diagnose. Die Anwendung verwendet direkt Windows-Systembibliotheken;
+.NET-Updates betreffen keine von ihr benötigte Laufzeit.
+
+GitHub-Runner verwenden Windows Server und prüfen weder den eigenen Windows-10/11-PC
+noch CH340-/Audiotreiber, reale USB-Hardware oder die hörbare Audioqualität.
+GitHub kann Zeitpläne in öffentlichen Projekten **nach 60 Tagen ohne
+Repository-Aktivität deaktivieren**; laufende Prüfungen allein sichern keine
+dauerhafte Aktivierung. Dann unter Actions den Workflow wieder aktivieren.
+Details und Quellen: [TESTING.md](TESTING.md#monatliche-windows-kompatibilität).
+
 ## Security und Veröffentlichung
 
 GitHub prüft C++-Code, Git-Historie auf Zugangsdaten sowie Protokoll-/Firmwaretests

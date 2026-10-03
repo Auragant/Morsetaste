@@ -1,5 +1,14 @@
 # Änderungen
 
+## Wartung – 04.10.2026
+
+- Monatlicher GitHub-Windows-Kompatibilitätstest: Produktionsbuild, Softwaretests
+  und GUI-/Thread-Prüfung auf aktueller und älterer Windows-Runnergeneration.
+- Die zuletzt veröffentlichte EXE wird zusätzlich unverändert getestet;
+  Vergleichsbuild mit Microsofts C++-Compiler und installiertem Windows-SDK.
+- Fehler erzeugen ein zugewiesenes Issue; grüne Folgeläufe schließen es.
+  Laufzeitumgebungen und Prüfgrenzen sind in `TESTING.md` dokumentiert.
+
 ## 1.2.1 – 04.10.2026
 
 - PC-Mithörton von waveOut auf ereignisgesteuertes WASAPI im Shared-Modus umgestellt.

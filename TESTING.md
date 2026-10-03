@@ -1,5 +1,57 @@
 # Prüfstand
 
+## Monatliche Windows-Kompatibilität
+
+Der Workflow [Windows compatibility](https://github.com/Auragant/Morsetaste/actions/workflows/compatibility.yml)
+läuft am 5. jedes Monats um 07:41 UTC, auf `main`-Pushes, Pull Requests und manuell.
+Der monatliche Lauf verwendet den aktuellen Default-Branch und frisch bereitgestellte
+GitHub-Windows-Images. `windows-latest` folgt GitHubs neuester stabiler Windows-
+Runnergeneration; `windows-2022` dient als zusätzliche ältere Vergleichsumgebung.
+Die tatsächliche OS-/Image-Version wird bei jedem Lauf protokolliert.
+
+1. Der unveränderte Produktionsbuild mit festgelegtem, SHA-256-geprüftem MinGW
+   wird auf beiden Windows-Runnern gebaut; alle fünf Softwaretests laufen dort.
+2. Der eingebaute `--render-test` prüft die gebaute EXE: Windows-GUI, Controls,
+   Frequenzfelder, Demo-/Hintergrundthread, Pause/Fortsetzen und vollständiges Beenden.
+   Ein Hänger bricht nach 60 Sekunden mit Fehler ab.
+3. Der neueste veröffentlichte Windows-ZIP-Download wird gegen GitHubs
+   Asset-SHA-256 geprüft. Die enthaltene, unveränderte EXE durchläuft denselben
+   GUI-Test. Release-Version und EXE-Prüfsumme werden protokolliert. Ein fehlendes
+   Release, Downloadfehler oder fehlende Prüfsumme lässt die Prüfung fehlschlagen.
+4. `scripts/build-msvc.ps1` baut Ressourcen, Anwendung und Softwaretests zusätzlich
+   mit den auf `windows-latest` installierten Microsoft-C++-/Windows-SDK-Werkzeugen
+   und führt Tests sowie GUI-Prüfung aus. Dieser Vergleichsbuild wird nicht veröffentlicht.
+
+Die Windows-System-DLLs werden beim Start geladen. Audioformate und der echte
+Audio-Thread werden gegen simulierte Geräte geprüft; kein echter Audiostream,
+COM-Port oder künstlicher Tastendruck wird erzeugt. GUI-PNGs bleiben 14 Tage als
+Actions-Artefakte verfügbar. Die Nano-Firmware wird im Softwaretest mitgeprüft;
+ein Board wird weder neu geflasht noch ein Arduino-Core heruntergeladen.
+
+Ein fehlgeschlagener Windows- oder SDK-Job auf dem Default-Branch erzeugt das
+zugewiesene Issue **[Kompatibilität] Windows-Prüfung benötigt Aufmerksamkeit**.
+Weitere Fehler kommentieren dasselbe Issue. Nur ein vollständig erfolgreicher
+Lauf schließt es; fehlende, abgebrochene, übersprungene oder veraltete Quellstände
+tun dies nicht. Der separate Benachrichtigungsjob führt keinen Checkout durch
+und erhält als einziger Issues-Schreibrechte; Pull Requests erhalten sie nicht.
+Die Zustellung folgt denselben GitHub-Einstellungen wie in [SECURITY.md](SECURITY.md#benachrichtigungen).
+
+**Grenzen:** GitHubs Standard-Windows-Runner laufen unter Windows Server. Sie
+bilden weder alle Windows-10/11-Funktionsupdates noch CH340-/Audiotreiber,
+USB-Geräte und Zielprogramme des eigenen PCs ab. Der Test erkennt Build-,
+DLL-Lade-, GUI- und Softwarefehler in den getesteten Umgebungen; nach größeren
+Windows-/Treiberupdates bleibt ein kurzer Praxistest am eigenen Aufbau sinnvoll.
+Die geprüften SDK-Versionen sind die auf dem Runner installierten Versionen,
+keine Zusage, dass jedes gerade veröffentlichte Microsoft-SDK bereits enthalten ist.
+
+Geplante Läufe können verspätet starten. GitHub deaktiviert sie in öffentlichen
+Repositories nach 60 Tagen ohne Repository-Aktivität; zur Reaktivierung unter
+Actions den Workflow aktivieren. Normale Workflow-Läufe sind kein verlässlicher
+Ersatz für Repository-Aktivität. Actions muss eingeschaltet bleiben.
+Quellen: [GitHub: Zeitpläne und Inaktivitätslimit](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule),
+[GitHub: Runner-Images und Aktualisierungen](https://github.com/actions/runner-images#image-definitions),
+[Microsoft: C++-Buildwerkzeuge](https://learn.microsoft.com/en-us/cpp/build/building-on-the-command-line).
+
 ## Version 1.2.1 – 04.10.2026
 
 Der Eigentümer bestätigte den erforderlichen User-Test mit „Test bestanden“.
