@@ -62,6 +62,15 @@ Diese Einordnung gilt nicht für spätere Erweiterungen um fremde Eingaben.
 [CodeQL: Code injection](https://codeql.github.com/codeql-query-help/javascript/js-code-injection/),
 [Node.js: Grenzen von node:vm](https://nodejs.org/api/vm.html).
 
+Der neue Kompatibilitäts-Benachrichtigungstest verwendet ab 04.10.2026 eine
+statisch importierte Funktion aus `.github/scripts/compatibility-notify.cjs`.
+Er prüft ihre Übereinstimmung mit dem eingebetteten Workflow-Code und führt
+ausschließlich diese Funktion mit simulierten GitHub-Objekten aus. JavaScript
+aus der YAML-Datei wird nicht dynamisch ausgeführt. Damit wurde der zu Beginn
+gemeldete [CodeQL-Hinweis 2](https://github.com/Auragant/Morsetaste/security/code-scanning/2)
+durch eine Codeänderung behoben; keine Regel oder Prüfung wird deaktiviert.
+Der privilegierte Job benötigt weiterhin keinen Checkout.
+
 ## Benachrichtigungen
 
 Bei einem fehlgeschlagenen Prüflauf auf dem Default-Branch erstellt

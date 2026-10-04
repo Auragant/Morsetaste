@@ -1,16 +1,17 @@
 # MorseBridge – Junker M.T. → Space
 
-Version **1.2.2 in Vorbereitung** – Menüleiste, manuelle Updateprüfung, Themes und App-Icon.
-User-Test und GitHub-Prüfungen für 1.2.2 stehen vor der Veröffentlichung noch aus.
-Der lokale Testablauf steht in [User-Test 1.2.2](docs/USER_TEST_1.2.2.md).
-Die zuletzt veröffentlichte Version **1.2.1** hat den User-Test am 04.10.2026
-bestanden. Seit 1.2.1 entfällt der bisherige Zusatz `p`.
+Version **1.2.2** – Menüleiste, manuelle Updateprüfung, Themes und App-Icon.
+Der Eigentümer hat diesen Stand am 04.10.2026 freigegeben; veröffentlicht wird
+dieselbe getestete EXE. Testumfang und Prüfgrenzen stehen in
+[TESTING.md](TESTING.md) und [User-Test 1.2.2](docs/USER_TEST_1.2.2.md).
+Version **1.2.1** samt Release, Downloads und Git-Historie bleibt erhalten.
+Seit 1.2.1 entfällt der bisherige Zusatz `p`.
 
 **Hinweis zu 1.2.0p:** Rauer/verzerrter PC-Mithörton und ein Windows-Absturz
 wurden gemeldet. Der Zusammenhang mit dem Absturz ist ungeklärt.
-Den PC-Mithörton in **1.2.0p ausgeschaltet lassen** und auf 1.2.1 aktualisieren.
+Den PC-Mithörton in **1.2.0p ausgeschaltet lassen** und auf die aktuelle Version aktualisieren.
 Die WASAPI-Ausgabe von 1.2.1 wurde vom Eigentümer am optischen Windows-Ausgang
-erfolgreich getestet. Alte Binärdownloads wurden zurückgezogen.
+erfolgreich getestet. Binärdownloads aus Versionen vor 1.2.1 wurden zurückgezogen.
 
 Die Junker-Morsetaste steuert über einen Arduino Nano mit ATmega328P und CH340C
 die Leertaste des aktiven Windows-Programms. Die kleine C++-Anwendung läuft auch
@@ -226,11 +227,35 @@ getestet und dies am 03.10.2026 bestätigt. Dies gilt für den getesteten Aufbau
 nicht als Garantie für alle Geräte oder Zielprogramme.
 Den User-Test der überarbeiteten PC-Audioausgabe von 1.2.1 hat er am
 04.10.2026 als bestanden bestätigt; die veröffentlichte EXE ist dieselbe Datei.
-Dieser Test bestätigt noch nicht die neue 1.2.2-EXE. Vor deren Veröffentlichung
-sind der erneute User-Test sowie Security checks und CodeQL für den
-Veröffentlichungsstand erforderlich.
+Den 1.2.2-Stand hat er am 04.10.2026 mit „Das passt jetzt soweit“ freigegeben.
+Einzelne praktische Tests wurden dabei nicht gesondert bestätigt; deren Grenzen
+und die zugehörigen GitHub-Prüfungen stehen in `TESTING.md`.
 
 Prüfergebnisse: [TESTING.md](TESTING.md) · Änderungen: [CHANGELOG.md](CHANGELOG.md).
+
+## Monatliche Windows-Kompatibilitätsprüfung
+
+[Windows compatibility](https://github.com/Auragant/Morsetaste/actions/workflows/compatibility.yml)
+prüft jeweils am **5. des Monats um 07:41 UTC** (08:41 Uhr MEZ / 09:41 Uhr MESZ),
+bei Änderungen auf `main`, bei Pull Requests und auf manuellen Aufruf:
+
+- Produktionsbuild und Softwaretests auf `windows-latest` und `windows-2022`.
+- Start und GUI-/Thread-Prüfung sowohl der neu gebauten als auch der zuletzt
+  veröffentlichten EXE auf den aktualisierten Windows-Systemen.
+- Zusätzlicher Build und Tests mit Microsofts installiertem C++-Compiler und
+  Windows-SDK auf `windows-latest`, um SDK-Änderungen zu erkennen.
+
+Fehler auf `main` erzeugen ein zugewiesenes GitHub-Issue; ein vollständiger grüner
+Folgelauf schließt es wieder. Windows-/Runner-Versionen, Logs und GUI-Bilder
+helfen bei der Diagnose. Die Anwendung verwendet direkt Windows-Systembibliotheken;
+.NET-Updates betreffen keine von ihr benötigte Laufzeit.
+
+GitHub-Runner verwenden Windows Server und prüfen weder den eigenen Windows-10/11-PC
+noch CH340-/Audiotreiber, reale USB-Hardware oder die hörbare Audioqualität.
+GitHub kann Zeitpläne in öffentlichen Projekten **nach 60 Tagen ohne
+Repository-Aktivität deaktivieren**; laufende Prüfungen allein sichern keine
+dauerhafte Aktivierung. Dann unter Actions den Workflow wieder aktivieren.
+Details und Quellen: [TESTING.md](TESTING.md#monatliche-windows-kompatibilität).
 
 ## Security und Veröffentlichung
 
@@ -240,7 +265,7 @@ GitHub-Issue. Prüfungen, Grenzen und E-Mail-Einstellungen:
 [SECURITY.md](SECURITY.md).
 
 [Rechtliche Vorprüfung und Veröffentlichungs-Checkliste](docs/PUBLICATION_REVIEW.md).
-Das für 1.2.2 vorgesehene Komplettpaket `MorseBridge-1.2.2-win64.zip` enthält zusätzlich
+Das Komplettpaket `MorseBridge-1.2.2-win64.zip` enthält zusätzlich
 die verwendeten Arduino-Core-Quellen und vollständigen Lizenzhinweise.
 Das Projekt wird unter dem GitHub-Alias **Auragant** veröffentlicht; es nennt
 keine persönliche Kontaktadresse des Projektverantwortlichen.

@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-only
+param([switch]$WindowsOnly)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $toolRoot = Join-Path $projectRoot '.tools'
@@ -31,7 +32,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $toolRoot 'w64devkit/bin/g++.exe')))
         if ($extract.ExitCode -ne 0) { throw 'Compiler extraction failed' }
     }
 }
-if (-not (Test-Path -LiteralPath (Join-Path $toolRoot 'arduino-cli/arduino-cli.exe'))) {
+if (-not $WindowsOnly -and -not (Test-Path -LiteralPath (Join-Path $toolRoot 'arduino-cli/arduino-cli.exe'))) {
     $archive = Get-ReleaseAsset 'arduino/arduino-cli' 'v1.5.1' 'arduino-cli_1.5.1_Windows_64bit.zip' 'fabe42e0eb04d00e776a66178299ff95a46c623dbc260f997e58fd514853dd40'
     Expand-Archive -LiteralPath $archive -DestinationPath (Join-Path $toolRoot 'arduino-cli') -Force
 }

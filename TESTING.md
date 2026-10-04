@@ -1,10 +1,13 @@
 # Prüfstand
 
-## Version 1.2.2 – in Vorbereitung
+## Version 1.2.2 – 04.10.2026
 
-Der neue User-Test und die GitHub-Prüfungen für den Veröffentlichungsstand
-stehen noch aus. Ein bestandener Test von 1.2.1 bestätigt nicht automatisch
-die neue EXE.
+Der Eigentümer hat den lokal bereitgestellten 1.2.2-Stand am 04.10.2026 mit
+„Das passt jetzt soweit“ freigegeben. Einzelne Hardware-, Monitorwechsel-,
+Kontrastmodus- und Bedienprüfungen wurden damit nicht gesondert bestätigt.
+Das bestehende Icon wurde ausdrücklich unverändert akzeptiert. Security-,
+CodeQL- und Windows-Kompatibilitätsprüfungen des Veröffentlichungsstands folgen
+vor dem Release.
 
 Lokale Prüfung am 04.10.2026, nach Einbindung des App-Icons erneut ausgeführt:
 
@@ -28,9 +31,10 @@ Lokale Prüfung am 04.10.2026, nach Einbindung des App-Icons erneut ausgeführt:
   COM-Auswahl, ausgeschaltete Ton-/Vordergrundoptionen und das Matrix-Menü.
   Ein dort entdeckter Button-Zeichenfehler wurde behoben und der GUI-Test erneut
   bestanden. Der Nutzer beendete die anschließende Computer-Use-Prüfung mit Escape;
-  auch nach erneuter Freigabe meldete das Tool den Abbruch weiterhin. Die
-  abschließende sichtbare Button-/Tastatur-/Dropdownprüfung bleibt Teil des
-  User-Tests. Systemwechsel und Windows-Kontrastmodus sind noch praktisch zu prüfen.
+  auch nach erneuter Freigabe meldete das Tool den Abbruch weiterhin.
+  Die allgemeine Nutzerabnahme bestätigt diese einzelnen automatisierten
+  Sicht-/Tastatur-/Dropdownprüfungen nicht zusätzlich. Systemwechsel und
+  Windows-Kontrastmodus bleiben unbestätigte praktische Prüfgrenzen.
 
 SHA-256 der lokal geprüften Test-EXE:
 
@@ -40,18 +44,17 @@ SHA-256 der lokal geprüften Test-EXE:
 
 Quellstand der Test-EXE: `6367112f772ecadb1e7dcf4eb5189743a3265dd2`
 (lokaler Git-Commit, ausgehend von `f801cff1bdf816a765b57966b255c5d8f8d907f9`).
-Danach wird nur die Dokumentation des Prüfstands ergänzt; die EXE bleibt unverändert.
-Prüfsummen liegen
-im Testpaket und daneben unter `dist/SHA256SUMS.txt`. Es wurden keine Änderungen,
-Issues, PRs, Pushes oder Releases auf GitHub veröffentlicht.
+Danach wurden Dokumentation und Build-/Prüfskripte ergänzt, einschließlich der
+monatlichen Windows-Kompatibilitätsprüfung. Laufzeitquellen, Icon und EXE bleiben
+unverändert. Prüfsummen liegen im Paket und daneben unter `dist/SHA256SUMS.txt`.
 
 Build-Zeitpunkt dieser EXE: `2026-10-03T23:41:18Z` (UTC). Sie ersetzt das frühere
-lokale Testpaket ohne App-Icon. Der Eigentümer bestätigte am 04.10.2026,
-dass der User-Test noch offen ist; Ablauf: `docs/USER_TEST_1.2.2.md`.
+lokale Testpaket ohne App-Icon. Ablauf und dokumentierte Nutzerabnahme stehen
+in `docs/USER_TEST_1.2.2.md`. Version 1.2.1 samt Git-Historie und Downloads bleibt erhalten.
 Die bisher leere GCC Runtime Library Exception wurde mit dem vollständigen
 Originaltext ergänzt. Der Paketbau verwirft fehlende/leere Pflicht-Lizenztexte.
 
-Vor Veröffentlichung erforderlich:
+Testumfang und praktische Prüfgrenzen:
 
 - Windows-Build mit Warnungen als Fehlern und sämtliche Kern-, Sinus-,
   Audioformat-/Puffer-, Audio-Thread-, Firmware-, Update- und Einstellungsprüfungen.
@@ -69,8 +72,8 @@ Vor Veröffentlichung erforderlich:
 - Manuelle Updateprüfung: neuere/gleiche/ältere Version, Offline, Timeout,
   Rate-Limit und ungültige Antwort; App bleibt bedienbar und beendet sich auch
   während einer Anfrage. GitHub-/Release-Link im Standardbrowser prüfen.
-- Security checks und CodeQL erfolgreich für den zu veröffentlichenden
-  Quellstand. In dieser Arbeitskopie wurden keine entfernten Prüfungen ausgelöst.
+- Security checks, CodeQL und Windows-Kompatibilität für den
+  Veröffentlichungsstand vor dem Release erfolgreich prüfen.
 - Version 1.2.2 in About, Footer, EXE-/Produktversion und ZIP konsistent;
   Build-Zeitpunkt in UTC eingebettet. SHA-256 und Quellstand der konkret
   getesteten EXE dokumentieren und diese Datei unverändert paketieren.
@@ -78,6 +81,66 @@ Vor Veröffentlichung erforderlich:
 Firmware und serielles Protokoll bleiben unverändert; ein Windows-Update auf
 1.2.2 erfordert kein erneutes Flashen. Das Paket bleibt ein vollständiges Quellen-
 und Binärpaket mit verwendeten Arduino-Core-/Variant-Quellen und Lizenzen.
+
+## Monatliche Windows-Kompatibilität
+
+Der Workflow [Windows compatibility](https://github.com/Auragant/Morsetaste/actions/workflows/compatibility.yml)
+läuft am 5. jedes Monats um 07:41 UTC, auf `main`-Pushes, Pull Requests und manuell.
+Der monatliche Lauf verwendet den aktuellen Default-Branch und frisch bereitgestellte
+GitHub-Windows-Images. `windows-latest` folgt GitHubs neuester stabiler Windows-
+Runnergeneration; `windows-2022` dient als zusätzliche ältere Vergleichsumgebung.
+Die tatsächliche OS-/Image-Version wird bei jedem Lauf protokolliert.
+
+1. Der unveränderte Produktionsbuild mit festgelegtem, SHA-256-geprüftem MinGW
+   wird auf beiden Windows-Runnern gebaut; alle sieben Softwaretests laufen dort.
+2. Der eingebaute `--render-test` prüft die gebaute EXE: Windows-GUI, Controls,
+   Frequenzfelder, Demo-/Hintergrundthread, Pause/Fortsetzen und vollständiges Beenden.
+   Ein Hänger bricht nach 60 Sekunden mit Fehler ab.
+3. Der neueste veröffentlichte Windows-ZIP-Download wird gegen GitHubs
+   Asset-SHA-256 geprüft. Die enthaltene, unveränderte EXE durchläuft denselben
+   GUI-Test. Release-Version und EXE-Prüfsumme werden protokolliert. Ein fehlendes
+   Release, Downloadfehler oder fehlende Prüfsumme lässt die Prüfung fehlschlagen.
+4. `scripts/build-msvc.ps1` baut Ressourcen, Anwendung und Softwaretests zusätzlich
+   mit den auf `windows-latest` installierten Microsoft-C++-/Windows-SDK-Werkzeugen
+   und führt Tests sowie GUI-Prüfung aus. Dieser Vergleichsbuild wird nicht veröffentlicht.
+
+Die Windows-System-DLLs werden beim Start geladen. Audioformate und der echte
+Audio-Thread werden gegen simulierte Geräte geprüft; kein echter Audiostream,
+COM-Port oder künstlicher Tastendruck wird erzeugt. GUI-PNGs bleiben 14 Tage als
+Actions-Artefakte verfügbar. Die Nano-Firmware wird im Softwaretest mitgeprüft;
+ein Board wird weder neu geflasht noch ein Arduino-Core heruntergeladen.
+
+Ein fehlgeschlagener Windows- oder SDK-Job auf dem Default-Branch erzeugt das
+zugewiesene Issue **[Kompatibilität] Windows-Prüfung benötigt Aufmerksamkeit**.
+Weitere Fehler kommentieren dasselbe Issue. Nur ein vollständig erfolgreicher
+Lauf schließt es; fehlende, abgebrochene, übersprungene oder veraltete Quellstände
+tun dies nicht. Der separate Benachrichtigungsjob führt keinen Checkout durch
+und erhält als einziger Issues-Schreibrechte; Pull Requests erhalten sie nicht.
+Die Zustellung folgt denselben GitHub-Einstellungen wie in [SECURITY.md](SECURITY.md#benachrichtigungen).
+
+**Grenzen:** GitHubs Standard-Windows-Runner laufen unter Windows Server. Sie
+bilden weder alle Windows-10/11-Funktionsupdates noch CH340-/Audiotreiber,
+USB-Geräte und Zielprogramme des eigenen PCs ab. Der Test erkennt Build-,
+DLL-Lade-, GUI- und Softwarefehler in den getesteten Umgebungen; nach größeren
+Windows-/Treiberupdates bleibt ein kurzer Praxistest am eigenen Aufbau sinnvoll.
+Die geprüften SDK-Versionen sind die auf dem Runner installierten Versionen,
+keine Zusage, dass jedes gerade veröffentlichte Microsoft-SDK bereits enthalten ist.
+
+Geplante Läufe können verspätet starten. GitHub deaktiviert sie in öffentlichen
+Repositories nach 60 Tagen ohne Repository-Aktivität; zur Reaktivierung unter
+Actions den Workflow aktivieren. Normale Workflow-Läufe sind kein verlässlicher
+Ersatz für Repository-Aktivität. Actions muss eingeschaltet bleiben.
+Quellen: [GitHub: Zeitpläne und Inaktivitätslimit](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule),
+[GitHub: Runner-Images und Aktualisierungen](https://github.com/actions/runner-images#image-definitions),
+[Microsoft: C++-Buildwerkzeuge](https://learn.microsoft.com/en-us/cpp/build/building-on-the-command-line).
+
+Die Einrichtung wurde am 04.10.2026 lokal und auf GitHub geprüft:
+beide Windows-Runner samt unveränderter Release-EXE sowie Microsofts Compiler
+und Windows-SDK **10.0.26100.0** waren erfolgreich
+([erster GitHub-Prüflauf](https://github.com/Auragant/Morsetaste/actions/runs/37160064213)).
+Zusätzlich bestanden 13 simulierte Kompatibilitäts-Benachrichtigungsszenarien,
+die PowerShell-Syntaxprüfung und actionlint 1.7.12. Der CodeQL-Testhinweis und
+seine Einordnung stehen in [SECURITY.md](SECURITY.md#einordnung-des-ersten-codeql-hinweises).
 
 ## Version 1.2.1 – 04.10.2026
 

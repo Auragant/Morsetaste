@@ -47,6 +47,6 @@ verwendet werden. `ToolsRoot` bezeichnet den Ordner mit `arduino-cli/` und
 `arduino-data/`; Standard bleibt der lokale `.tools/`-Ordner.
 
 Für Release `1.2.2` ist das vollständige Quellen- und Binärpaket
-`MorseBridge-1.2.2-win64.zip` vorgesehen. Bei separater Weitergabe von EXE oder HEX immer
+`MorseBridge-1.2.2-win64.zip` enthalten. Bei separater Weitergabe von EXE oder HEX immer
 auch den gleichwertigen Zugriff auf die passenden vollständigen Quellen
 und Lizenzhinweise sicherstellen.

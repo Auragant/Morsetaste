@@ -102,6 +102,7 @@ jobs:
           ./build/settings_tests
           ./build/firmware_tests
           node tests/security_notify_tests.cjs
+          node tests/compatibility_notify_tests.cjs
 
   notify:
     name: Notify repository owner on failure

@@ -1,4 +1,4 @@
-MORSEBRIDGE 1.2.2 (IN VORBEREITUNG) – JUNKER M.T. / ARDUINO NANO / WINDOWS
+MORSEBRIDGE 1.2.2 – JUNKER M.T. / ARDUINO NANO / WINDOWS
 
 1. ANSCHLIESSEN
    Beide potentialfreien Schaltkontakte der Junker an D2 und GND des Nano.
@@ -70,6 +70,6 @@ sicherheitskritische Verwendung. Vollständiger Hinweis: DISCLAIMER.md.
 Eigener Code: GPLv3 (LICENSE). Fremdlizenzen: THIRD_PARTY_NOTICES.md / licenses/.
 Repository: https://github.com/Auragant/Morsetaste
 Der Eigentümer hat frühere Praxistests der Junker/Nano/Summer-Kombination und
-der PC-Audioausgabe von 1.2.1 bestätigt. Für 1.2.2 stehen User-Test und GitHub-
-Prüfungen noch aus; vor Veröffentlichung müssen sie erfolgreich sein.
+der PC-Audioausgabe von 1.2.1 bestätigt. Den 1.2.2-Stand hat er am 04.10.2026
+freigegeben. Umfang und Grenzen der Prüfungen stehen in TESTING.md.
 Firmware bleibt unverändert; für dieses Windows-Update ist kein Flashen nötig.

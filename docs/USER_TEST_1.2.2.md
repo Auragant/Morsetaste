@@ -1,7 +1,9 @@
 # Lokaler User-Test für MorseBridge 1.2.2
 
-GitHub-Veröffentlichung steht aus. Bitte die neue `dist/MorseBridge.exe` normal
-starten; diese Datei wird nach bestandenem Test unverändert veröffentlicht.
+Der Eigentümer hat den lokalen Stand am 04.10.2026 mit „Das passt jetzt soweit“
+freigegeben. Einzelne Schritte wurden nicht gesondert bestätigt; die folgende
+Liste hält den vorgesehenen Testumfang fest. Die getestete `dist/MorseBridge.exe`
+wird unverändert veröffentlicht.
 Der Nano braucht für 1.2.2 keine neue Firmware.
 
 1. **Start und Verbindung:** About zeigt 1.2.2 und den UTC-Buildzeitpunkt;
@@ -24,10 +26,10 @@ Der Nano braucht für 1.2.2 keine neue Firmware.
    Loslassen vor erneuter Ausgabe erforderlich sein. USB-Abziehen, Sperren,
    Standby und Beenden müssen die Ausgabe sicher freigeben.
 5. **Manuelle Updateprüfung:** Hilfe-Menü und About-Schaltfläche ausprobieren.
-   Solange nur 1.2.1 veröffentlicht ist, ist keine neuere Version verfügbar.
+   Ohne neueren stabilen Release meldet die Prüfung keine verfügbare Aktualisierung.
    Offline und Abbrechen prüfen; App muss bedienbar bleiben und sich während
    einer Anfrage vollständig beenden lassen.
 
 Bei einem Problem bitte konkreten Schritt, Theme/Skalierung und beobachtetes
-Verhalten nennen. Zum Freigeben „User-Test 1.2.2 bestanden“ zurückmelden.
-Danach folgen Security-/CodeQL-Prüfungen und GitHub-Release.
+Verhalten nennen. Nutzerfreigabe, automatische Prüfergebnisse und praktische
+Prüfgrenzen stehen in `TESTING.md`.

@@ -123,11 +123,11 @@ Die bisherigen Häkchen dokumentieren die frühere Veröffentlichung. Für die n
 EXE sind erneut erforderlich:
 
 - [x] Lokalen Windows-Build, 559 automatische Prüfungen, GUI-/Worker-Test und eingebettete Iconressourcen erneut geprüft.
-- [ ] Vollständige praktische Theme-/GUI-Sichtprüfung einschließlich Monitorwechsel und Kontrastmodus bestätigen.
-- [ ] User-Test der konkret zu veröffentlichenden 1.2.2-EXE bestätigen.
+- [x] Allgemeine Nutzerabnahme der konkret zu veröffentlichenden 1.2.2-EXE am 04.10.2026 erhalten.
+- [x] Grenzen der nicht einzeln bestätigten praktischen Theme-/GUI-/Hardwaretests in `TESTING.md` dokumentiert.
 - [ ] Security checks und CodeQL für den Veröffentlichungsstand erfolgreich prüfen.
-- [ ] Quellstand und SHA-256 der getesteten EXE festhalten; Paket ohne EXE-Neubuild erstellen.
-- [ ] Paketinhalt, EXE-/Produktversion, Build-Zeitpunkt und Quellenzuordnung prüfen.
+- [x] Quellstand und SHA-256 der getesteten EXE festhalten; Paket ohne EXE-Neubuild erstellen.
+- [x] Paketinhalt, EXE-/Produktversion, Build-Zeitpunkt und Quellenzuordnung prüfen.
 - [ ] Erst danach Tag/Release und Downloads veröffentlichen.
 
 ### Datenschutz und Meldeweg

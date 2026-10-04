@@ -1,6 +1,6 @@
 # Änderungen
 
-## 1.2.2 – in Vorbereitung
+## 1.2.2 – 04.10.2026
 
 - Eigenes App-Icon: Leertaste mit Morseimpulsen, eingebettet für EXE,
   Hauptfenster und Dialoge in mehreren Windows-Icongrößen.
@@ -20,8 +20,18 @@
   und Manifest werden beim Build erzeugt. Paketbau prüft die EXE-Version und
   baut die getestete EXE nicht erneut.
 - Firmware und serielles Protokoll bleiben unverändert; erneutes Flashen ist
-  für dieses Windows-Update nicht erforderlich. Release erst nach User-Test
-  und erfolgreichen Security-/CodeQL-Prüfungen des Veröffentlichungsstands.
+  für dieses Windows-Update nicht erforderlich. Der Eigentümer hat den Stand
+  am 04.10.2026 mit „Das passt jetzt soweit“ freigegeben; dieselbe EXE wird veröffentlicht.
+  Version 1.2.1 samt Tag, Release und Downloads bleibt erhalten.
+
+## Wartung – 04.10.2026
+
+- Monatlicher GitHub-Windows-Kompatibilitätstest: Produktionsbuild, Softwaretests
+  und GUI-/Thread-Prüfung auf aktueller und älterer Windows-Runnergeneration.
+- Die zuletzt veröffentlichte EXE wird zusätzlich unverändert getestet;
+  Vergleichsbuild mit Microsofts C++-Compiler und installiertem Windows-SDK.
+- Fehler erzeugen ein zugewiesenes Issue; grüne Folgeläufe schließen es.
+  Laufzeitumgebungen und Prüfgrenzen sind in `TESTING.md` dokumentiert.
 
 ## 1.2.1 – 04.10.2026
 
