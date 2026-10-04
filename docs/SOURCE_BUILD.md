@@ -46,7 +46,7 @@ Vorhandene Werkzeuge können mit `build.ps1 -Compiler <g++.exe>` sowie
 verwendet werden. `ToolsRoot` bezeichnet den Ordner mit `arduino-cli/` und
 `arduino-data/`; Standard bleibt der lokale `.tools/`-Ordner.
 
-Für Release `1.2.2` ist das vollständige Quellen- und Binärpaket
-`MorseBridge-1.2.2-win64.zip` enthalten. Bei separater Weitergabe von EXE oder HEX immer
+Das vollständige Quellen- und Binärpaket für Release `1.2.2` heißt
+`MorseBridge-1.2.2-win64.zip`. Bei separater Weitergabe von EXE oder HEX immer
 auch den gleichwertigen Zugriff auf die passenden vollständigen Quellen
 und Lizenzhinweise sicherstellen.

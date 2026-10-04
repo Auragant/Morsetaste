@@ -66,11 +66,11 @@ public:
         if (!dpi) dpi = 96;
         HICON large = load(GetSystemMetricsForDpi(SM_CXICON, dpi),
                            GetSystemMetricsForDpi(SM_CYICON, dpi));
-        HICON small = load(GetSystemMetricsForDpi(SM_CXSMICON, dpi),
+        HICON smallIcon = load(GetSystemMetricsForDpi(SM_CXSMICON, dpi),
                            GetSystemMetricsForDpi(SM_CYSMICON, dpi));
         SendMessageW(window, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(large));
-        SendMessageW(window, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(small));
-        clear(); large_ = large; small_ = small;
+        SendMessageW(window, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(smallIcon));
+        clear(); large_ = large; small_ = smallIcon;
     }
     void clear() {
         if (large_) DestroyIcon(large_);

@@ -18,7 +18,8 @@ Lokale Prüfung am 04.10.2026, nach Einbindung des App-Icons erneut ausgeführt:
 - App-Icon in der EXE: alle sieben PNG-/RGBA-Ressourcen (16/24/32/48/64/128/256)
   stimmen bytegleich mit der ICO-Vorlage überein. Große/kleine Icons für
   100/150/200 % DPI erfolgreich über Windows geladen; About-Bildexport zeigt
-  das eigene Icon in der Titelleiste. Praktischen Monitorwechsel im User-Test prüfen.
+  das eigene Icon in der Titelleiste. Ein praktischer Monitorwechsel wurde nicht
+  gesondert bestätigt.
 - GUI-/Demo-Worker-Test bestanden, einschließlich Theme-Vorschau/Abbrechen/OK,
   Updateanzeige mit simuliertem Transport, Abbruch, Pause und vollständigem Beenden.
   Bildexporte für sechs Darstellungsoptionen bei 100/150/200 % Skalierung vorhanden;
@@ -45,8 +46,13 @@ SHA-256 der lokal geprüften Test-EXE:
 Quellstand der Test-EXE: `6367112f772ecadb1e7dcf4eb5189743a3265dd2`
 (lokaler Git-Commit, ausgehend von `f801cff1bdf816a765b57966b255c5d8f8d907f9`).
 Danach wurden Dokumentation und Build-/Prüfskripte ergänzt, einschließlich der
-monatlichen Windows-Kompatibilitätsprüfung. Laufzeitquellen, Icon und EXE bleiben
+monatlichen Windows-Kompatibilitätsprüfung. Eine lokale Icon-Variable wurde
+wegen des Microsoft-SDK-Makros `small` in `smallIcon` umbenannt; diese reine
+Bezeichneränderung verändert das Verhalten nicht. Icon und EXE bleiben
 unverändert. Prüfsummen liegen im Paket und daneben unter `dist/SHA256SUMS.txt`.
+Der MinGW-Vergleichsbuild nach der Umbenennung erzeugt eine bytegleiche
+`.text`-Sektion; veröffentlicht wird weiterhin die vollständig unveränderte
+freigegebene EXE mit obiger SHA-256.
 
 Build-Zeitpunkt dieser EXE: `2026-10-03T23:41:18Z` (UTC). Sie ersetzt das frühere
 lokale Testpaket ohne App-Icon. Ablauf und dokumentierte Nutzerabnahme stehen
