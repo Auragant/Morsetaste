@@ -125,10 +125,10 @@ EXE sind erneut erforderlich:
 - [x] Lokalen Windows-Build, 559 automatische Prüfungen, GUI-/Worker-Test und eingebettete Iconressourcen erneut geprüft.
 - [x] Allgemeine Nutzerabnahme der konkret zu veröffentlichenden 1.2.2-EXE am 04.10.2026 erhalten.
 - [x] Grenzen der nicht einzeln bestätigten praktischen Theme-/GUI-/Hardwaretests in `TESTING.md` dokumentiert.
-- [ ] Security checks, CodeQL und Windows-Kompatibilität für den Veröffentlichungsstand erfolgreich prüfen.
+- [x] Security checks, CodeQL und Windows-Kompatibilität für den Laufzeit-/Buildskriptstand `4000c27` erfolgreich; Nachweise in `TESTING.md`.
 - [x] Quellstand und SHA-256 der getesteten EXE festhalten; Paket ohne EXE-Neubuild erstellen.
 - [x] Paketinhalt, EXE-/Produktversion, Build-Zeitpunkt und Quellenzuordnung prüfen.
-- [ ] Erst danach Tag/Release und Downloads veröffentlichen.
+- [x] Tag/Release und Downloads nach Nutzerabnahme und erfolgreichen Prüfungen zur Veröffentlichung freigegeben; Version 1.2.1 bleibt erhalten.
 
 ### Datenschutz und Meldeweg
 
@@ -153,7 +153,8 @@ kommerzielle Bereitstellung oder Hardwareverteilung erfordert eine neue Prüfung
 
 Ergebnis der früheren Vorprüfung: Die allgemeinen Freigabepunkte für diesen
 nichtkommerziellen Hobbyumfang sind abgearbeitet. Die zusätzlichen technischen
-Freigabepunkte für 1.2.2 sind noch offen. Lizenztexte, LLM-Hinweis und die zugehörigen Quellen sind
+Freigabepunkte für 1.2.2 sind nach Nutzerabnahme und erfolgreichen GitHub-Prüfungen
+abgearbeitet. Lizenztexte, LLM-Hinweis und die zugehörigen Quellen sind
 Bestandteil des Release-Pakets. Eine uneingeschränkte rechtliche Unbedenklichkeit
 wird nicht behauptet; kommerzielle Bereitstellung oder Hardwareverteilung
 erfordern eine neue Prüfung.

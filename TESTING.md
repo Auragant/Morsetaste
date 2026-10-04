@@ -6,8 +6,14 @@ Der Eigentümer hat den lokal bereitgestellten 1.2.2-Stand am 04.10.2026 mit
 „Das passt jetzt soweit“ freigegeben. Einzelne Hardware-, Monitorwechsel-,
 Kontrastmodus- und Bedienprüfungen wurden damit nicht gesondert bestätigt.
 Das bestehende Icon wurde ausdrücklich unverändert akzeptiert. Security-,
-CodeQL- und Windows-Kompatibilitätsprüfungen des Veröffentlichungsstands folgen
-vor dem Release.
+CodeQL- und Windows-Kompatibilitätsprüfungen für den Laufzeit-/Buildskriptstand
+`4000c27cd170c63701ece2bd4d4d811631102f6a` waren am 04.10.2026 erfolgreich:
+[Security checks](https://github.com/Auragant/Morsetaste/actions/runs/37163880965),
+[CodeQL](https://github.com/Auragant/Morsetaste/actions/runs/37163880999) und
+[Windows compatibility](https://github.com/Auragant/Morsetaste/actions/runs/37163880938).
+Beide Windows-Runner und Microsofts C++-Compiler mit Windows-SDK 10.0.26100.0
+bestanden Build, alle sieben Softwaretests und GUI-/Workerprüfung.
+Der anschließende Veröffentlichungscommit ergänzt nur diese Dokumentation.
 
 Lokale Prüfung am 04.10.2026, nach Einbindung des App-Icons erneut ausgeführt:
 
@@ -78,8 +84,8 @@ Testumfang und praktische Prüfgrenzen:
 - Manuelle Updateprüfung: neuere/gleiche/ältere Version, Offline, Timeout,
   Rate-Limit und ungültige Antwort; App bleibt bedienbar und beendet sich auch
   während einer Anfrage. GitHub-/Release-Link im Standardbrowser prüfen.
-- Security checks, CodeQL und Windows-Kompatibilität für den
-  Veröffentlichungsstand vor dem Release erfolgreich prüfen.
+- Security checks, CodeQL und Windows-Kompatibilität vor dem Release erfolgreich;
+  zugehörige Läufe und Quellstand stehen oben.
 - Version 1.2.2 in About, Footer, EXE-/Produktversion und ZIP konsistent;
   Build-Zeitpunkt in UTC eingebettet. SHA-256 und Quellstand der konkret
   getesteten EXE dokumentieren und diese Datei unverändert paketieren.
