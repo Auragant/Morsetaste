@@ -195,7 +195,8 @@ class UiTheme {
                  !enabled ? palette_.muted : open ? palette_.selectionText : palette_.text);
         RECT caption{rectangle.left+scaled(entry.window,7),rectangle.top+1,arrow.left-scaled(entry.window,3),rectangle.bottom-1};
         const int selection = int(SendMessageW(entry.window,CB_GETCURSEL,0,0));
-        const auto value = comboLabel(entry.window,selection);
+        const bool editable = (GetWindowLongPtrW(entry.window,GWL_STYLE) & 3) == CBS_DROPDOWN;
+        const auto value = editable ? label(entry.window) : comboLabel(entry.window,selection);
         SetTextColor(dc,enabled ? palette_.text : palette_.muted);
         DrawTextW(dc,value.c_str(),int(value.size()),&caption,DT_LEFT|DT_SINGLELINE|DT_VCENTER|DT_END_ELLIPSIS|DT_NOPREFIX);
         if (GetFocus() == entry.window && showFocus(entry.window)) {

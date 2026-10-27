@@ -1,18 +1,44 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // LLM-assisted implementation; see LICENSE and DISCLAIMER.md.
 #pragma once
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <string>
 #include <string_view>
 #include "tone_core.hpp"
+#include "output_key.hpp"
 
 namespace morse {
 enum class ThemeId { System, Light, Dark, Midnight, Amber, Matrix };
 struct Settings {
     ThemeId theme = ThemeId::System;
     unsigned frequency = toneDefaultHz;
+    std::vector<unsigned> customOutputKeys{};
+    unsigned outputKey = spaceKey;
 };
+inline std::vector<unsigned> availableOutputKeys(const Settings& settings) {
+    std::vector<unsigned> result{spaceKey, leftCtrlKey};
+    for (const auto vk : settings.customOutputKeys) {
+        if (result.size() >= maxCustomOutputKeys + 2) break;
+        if (findOutputKey(vk) && std::find(result.begin(),result.end(),vk) == result.end()) result.push_back(vk);
+    }
+    return result;
+}
+inline bool addCustomOutputKey(Settings& settings, unsigned vk) {
+    const auto available = availableOutputKeys(settings);
+    if (!findOutputKey(vk) || available.size() >= maxCustomOutputKeys + 2 ||
+        std::find(available.begin(),available.end(),vk) != available.end()) return false;
+    settings.customOutputKeys.assign(available.begin()+2, available.end());
+    settings.customOutputKeys.push_back(vk);
+    return true;
+}
+inline void removeCustomOutputKey(Settings& settings, unsigned vk) {
+    if (vk == spaceKey || vk == leftCtrlKey) return;
+    auto& keys = settings.customOutputKeys;
+    keys.erase(std::remove(keys.begin(),keys.end(),vk),keys.end());
+    if (settings.outputKey == vk) settings.outputKey = spaceKey;
+}
 struct ThemePalette {
     std::uint32_t background, text, muted, contact, output, border, warning, surface;
     std::uint32_t contactActive, outputActive, control, hover, selection, selectionText;
@@ -89,15 +115,38 @@ inline Settings parseSettings(std::string_view source) {
         } else if (settingEquals(key, "Frequency")) {
             unsigned frequency;
             result.frequency = parseFrequency(value, frequency) ? frequency : toneDefaultHz;
+        } else if (settingEquals(key, "OutputKey")) {
+            const auto* output = parseOutputKey(value);
+            result.outputKey = output ? output->vk : spaceKey;
+        } else if (settingEquals(key, "CustomOutputKeys")) {
+            result.customOutputKeys.clear();
+            auto remaining = value;
+            while (!remaining.empty()) {
+                const auto separator = remaining.find(';');
+                const auto* output = parseOutputKey(remaining.substr(0,separator));
+                if (output) addCustomOutputKey(result,output->vk);
+                if (separator == std::string_view::npos) break;
+                remaining.remove_prefix(separator+1);
+            }
         }
     }
+    const auto available = availableOutputKeys(result);
+    if (std::find(available.begin(),available.end(),result.outputKey) == available.end()) result.outputKey = spaceKey;
     return result;
 }
 inline std::string serializeSettings(const Settings& settings) {
     const auto hz = settings.frequency >= toneMinHz && settings.frequency <= toneMaxHz
         ? settings.frequency : toneDefaultHz;
-    return std::string("[MorseBridge]\nTheme=") + themeIdName(settings.theme) +
-           "\nFrequency=" + std::to_string(hz) + "\n";
+    const auto available = availableOutputKeys(settings);
+    const auto output = std::find(available.begin(),available.end(),settings.outputKey) != available.end()
+        ? settings.outputKey : spaceKey;
+    std::string result = std::string("[MorseBridge]\nTheme=") + themeIdName(settings.theme) +
+        "\nFrequency=" + std::to_string(hz) + "\nOutputKey=" + findOutputKey(output)->name + "\nCustomOutputKeys=";
+    for (std::size_t i = 2; i < available.size(); ++i) {
+        if (i != 2) result += ';';
+        result += findOutputKey(available[i])->name;
+    }
+    return result + "\n";
 }
 inline ThemePalette paletteFor(ThemeId id, bool systemDark, bool highContrast) {
     using C = std::uint32_t;

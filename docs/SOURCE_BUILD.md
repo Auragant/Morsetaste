@@ -46,7 +46,21 @@ Vorhandene Werkzeuge können mit `build.ps1 -Compiler <g++.exe>` sowie
 verwendet werden. `ToolsRoot` bezeichnet den Ordner mit `arduino-cli/` und
 `arduino-data/`; Standard bleibt der lokale `.tools/`-Ordner.
 
-Das vollständige Quellen- und Binärpaket für Release `1.2.2` heißt
-`MorseBridge-1.2.2-win64.zip`. Bei separater Weitergabe von EXE oder HEX immer
+Der Eigentümer hat den parallelen praktischen Test von `1.3.0` am 27.10.2026
+allgemein als erfolgreich bewertet und die Veröffentlichung freigegeben.
+Einzelne Punkte der praktischen Prüfliste wurden damit nicht gesondert bestätigt;
+Details stehen in [USER_TEST_1.3.0.md](USER_TEST_1.3.0.md), automatisierte
+Nachweise in [TESTING.md](../TESTING.md).
+Das vollständige Quellen- und Binärpaket heißt
+`MorseBridge-1.3.0-win64.zip`. Die Windows-App ergänzt die wählbare Ausgabetaste
+(SPACE, Left CTRL und eigene Einzeltasten); Firmware und Arduino-Core bleiben
+unverändert. Ein Windows-Update erfordert kein erneutes Flashen.
+
+Die getestete EXE wird unverändert übernommen, mit SHA-256
+`2f461e4f581b02203b42da7db092e10c99e142cd943348ff94bde327003b4973`.
+Der erneute Paketbau ergänzt nur die aktualisierte Dokumentation und baut
+die EXE nicht neu.
+
+Bei separater Weitergabe von EXE oder HEX immer
 auch den gleichwertigen Zugriff auf die passenden vollständigen Quellen
 und Lizenzhinweise sicherstellen.

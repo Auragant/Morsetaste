@@ -1,13 +1,17 @@
 # Optionaler aktiver Summer (TMB12A05)
 
-Ab JunkerSpace **1.1** kann ein aktiver Summer lokal am Nano mitlaufen.
+Die Firmware (Sketch JunkerSpace, ab **1.1**) kann einen aktiven Summer lokal
+am Nano mitlaufen lassen. Als Eingang dient ein potentialfreier Schließerkontakt
+zwischen **D2 und GND**, etwa eine gerade Morsetaste, ein Taster oder Fußtaster.
+Den Kontakt von Funkgerät/Sender und anderen Spannungsquellen trennen;
+keine Fremdspannung an D2 anlegen.
 Ein Schalter zwischen **D4 und GND** gibt ihn frei. Es gilt immer:
 
-**Summer an = Schalter geschlossen UND Morsetaste gedrückt.**
+**Summer an = Freigabeschalter geschlossen UND Tastkontakt an D2 geschlossen.**
 
 Bei offenem oder nicht angeschlossenem Schalter bleibt der Summer aus.
 Der Schalter schaltet den Mithörton frei, er erzeugt keinen Dauerton und
-schaltet die Space-Ausgabe nicht ab. Sein Zustand wird direkt ausgewertet;
+schaltet die PC-Tastaturausgabe nicht ab. Sein Zustand wird direkt ausgewertet;
 ein kurz betätigter Taster würde den Ton deshalb nur während des Festhaltens
 freigeben. Für dauerhaft Ein/Aus einen rastenden Schalter oder einen mechanisch
 entsprechend gehaltenen Mikroschalter verwenden.
@@ -25,7 +29,7 @@ Benötigt: TMB12A05, NPN-Transistor **BC337**, **1 kΩ**, **10 kΩ**, Diode
 
 | Verbindung | Anschluss |
 | --- | --- |
-| Junker-Taste | Unverändert zwischen **D2 und GND** |
+| Potentialfreier Tastkontakt | Zwischen **D2 und GND** |
 | Summer-Freigabeschalter | Zwischen **D4 und GND**, bei drei Kontakten **COM und NO** |
 | Summer **+** | Nano **5V**, nicht VIN |
 | Summer **−** | **Kollektor (C)** des BC337 |
@@ -48,7 +52,7 @@ Nano D8 ----[1 kΩ]----+-------------------------- B  BC337
 Nano GND ------------+-------------------------- E  BC337
 
 Nano D4 -------- Ein/Aus-Schalter -------- Nano GND
-Nano D2 -------- Junker-Kontakt ---------- Nano GND
+Nano D2 -------- Tastkontakt ------------ Nano GND
 ```
 
 Alle mit B/C/E bezeichneten Anschlüsse gehören zu demselben Transistor.
@@ -64,16 +68,16 @@ Der D4-Schalter nutzt den internen Pull-up; dafür ist kein weiterer Widerstand 
 
 ## Verhalten der Firmware
 
-- Morsetaste: unverändert **5 ms** Entprellung, LED und serielles D/U-Signal.
+- Tastkontakt an D2: **5 ms** Entprellung, LED und serielles D/U-Signal.
 - Freigabeschalter: separat **20 ms** Entprellung in beide Richtungen.
 - D8 liefert **HIGH für Ton an**, **LOW für Ton aus**. Keine PWM und kein `tone()`;
   der aktive Summer erzeugt seine Frequenz selbst.
-- Ausschalten während eines gehaltenen Morseimpulses stoppt nach der
+- Ausschalten bei geschlossenem Tastkontakt stoppt nach der
   Schalter-Entprellung nur den Ton; das serielle „gedrückt“ bleibt bestehen.
-- Einschalten bei bereits gedrückter Morsetaste startet nach der Entprellung den Ton.
+- Einschalten bei bereits geschlossenem Tastkontakt startet nach der Entprellung den Ton.
 - Nach Reset ist D8 zunächst LOW. Auch ein bereits geschlossener Schalter wird
   erst nach 20 ms stabiler Freigabe wirksam.
-- Keine Wartepausen in der Schleife: Schalterprellen blockiert keine Morseereignisse.
+- Keine Wartepausen in der Schleife: Schalterprellen blockiert keine Kontaktmeldungen.
 - Der Ton wird vollständig im Nano erzeugt und funktioniert mit USB-Versorgung
   auch ohne laufende Windows-App. **Pause und Fokus der Windows-App beeinflussen
   den lokalen Ton nicht.** Zum Stummschalten den Hardwareschalter öffnen.
@@ -84,11 +88,12 @@ Der D4-Schalter nutzt den internen Pull-up; dafür ist kein weiterer Widerstand 
 
 1. MorseBridge und den seriellen Monitor schließen. Den aktualisierten Sketch
    `firmware/JunkerSpace/JunkerSpace.ino` auf den Nano hochladen.
-2. Ohne Freigabeschalter testen: Morsetaste betätigen → LED/Space wie bisher,
-   Summer bleibt aus.
-3. D4 mit GND über den Schalter verbinden: Nur beim Drücken der Junker muss
-   der Ton ertönen, beim Loslassen verstummen.
-4. Junker gedrückt halten und den Freigabeschalter öffnen: Ton aus,
+2. Ohne Freigabeschalter testen: Tastkontakt schließen und öffnen. LED und
+   Kontaktanzeige müssen folgen; die gewählte PC-Taste wird bei aktivem
+   Zielfenster gehalten/freigegeben. Der Summer bleibt aus.
+3. D4 mit GND über den Schalter verbinden: Nur bei geschlossenem Tastkontakt
+   an D2 muss der Ton ertönen, beim Öffnen verstummen.
+4. Tastkontakt an D2 geschlossen halten und den Freigabeschalter öffnen: Ton aus,
    LED/Kontaktstatus weiterhin an.
 
 Der Aufbau ist softwareseitig getestet und für diese 5-V-Schaltstufe ausgelegt.

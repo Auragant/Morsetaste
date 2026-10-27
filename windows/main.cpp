@@ -33,15 +33,17 @@
 #include "resource_ids.h"
 #include "appearance.hpp"
 #include "settings.hpp"
+#include "keyboard_output.hpp"
 #include "ui_theme.hpp"
 #include "update_client.hpp"
 
 namespace {
 constexpr wchar_t CLASS_NAME[] = L"JunkerMorseBridgeWindow";
 constexpr int ID_PORT = 101, ID_REFRESH = 102, ID_PAUSE = 103, ID_TOP = 104, ID_CLOSE = 105;
-constexpr int ID_AUDIO = 106, ID_FREQUENCY = 107, ID_SPIN = 108;
+constexpr int ID_AUDIO = 106, ID_FREQUENCY = 107, ID_SPIN = 108, ID_OUTPUT_KEY = 109;
 constexpr int ID_SETTINGS = 201, ID_ABOUT = 202, ID_UPDATE = 203;
 constexpr int ID_THEME = 301, ID_GITHUB = 302, ID_RELEASE = 303, ID_UPDATE_STATUS = 304;
+constexpr int ID_CUSTOM_KEY = 305, ID_KEY_ADD = 306, ID_KEY_LIST = 307, ID_KEY_REMOVE = 308;
 constexpr UINT WM_UPDATE_READY = WM_APP + 1;
 constexpr int HOTKEY_PAUSE = 1;
 
@@ -189,6 +191,7 @@ struct Snapshot {
     std::vector<PortInfo> ports;
     bool connected = false, physical = false, output = false, enabled = true;
     bool armed = false, fault = false, ownWindow = true, demo = false;
+    unsigned outputKey = morse::spaceKey;
     uint64_t presses = 0, lastDuration = 0, lastPacket = 0;
     std::deque<Edge> edges;
     morse::PulseHistory pulses;
@@ -197,7 +200,7 @@ struct Snapshot {
 struct App {
     WindowIcons icons;
     HWND window = nullptr, combo = nullptr, refresh = nullptr, pause = nullptr, top = nullptr, close = nullptr;
-    HWND audioCheck = nullptr, frequency = nullptr, spin = nullptr;
+    HWND audioCheck = nullptr, frequency = nullptr, spin = nullptr, outputChoice = nullptr;
     HWND dialog = nullptr;
     morse::Settings settings;
     morse::ThemeId displayTheme = morse::ThemeId::System;
@@ -208,7 +211,7 @@ struct App {
     morse::UpdateChecker updates{[this](morse::Version current,const std::atomic<bool>& cancel,morse::UpdateChecker::Deadline deadline) {
         if (renderTest || uiTest) {
             for (int i=0; i<16 && !cancel; ++i) Sleep(5);
-            return morse::UpdateResponse{200,"{\"tag_name\":\"v1.2.3\",\"draft\":false,\"prerelease\":false}",{},0};
+            return morse::UpdateResponse{200,"{\"tag_name\":\"v1.3.1\",\"draft\":false,\"prerelease\":false}",{},0};
         }
         return morse::update_detail::fetchLatest(current,cancel,deadline);
     }};
@@ -218,6 +221,7 @@ struct App {
     UINT dpi = 96;
     std::atomic<bool> stop{false}, enabled{true}, suspended{false}, locked{false};
     std::atomic<unsigned> revision{0};
+    std::atomic<unsigned> outputKey{morse::spaceKey};
     HANDLE wake = nullptr;
     std::thread worker;
     std::mutex mutex;
@@ -255,18 +259,31 @@ struct App {
 void applyAppearance(morse::ThemeId id);
 void persistSettings();
 
-bool sendSpace(bool down) {
-    INPUT input{}; input.type = INPUT_KEYBOARD;
-    input.ki.wScan = 0x39; // PC scan code: Space, independent of keyboard layout.
-    input.ki.dwFlags = KEYEVENTF_SCANCODE | (down ? 0 : KEYEVENTF_KEYUP);
-    input.ki.dwExtraInfo = 0x4D4F5253;
-    return SendInput(1, &input, sizeof(input)) == 1;
+std::wstring outputKeyLabel(unsigned vk) {
+    const auto* key = morse::findOutputKey(vk);
+    const char* name = key ? key->name : "SPACE";
+    return std::wstring(name, name + std::strlen(name));
+}
+
+void refreshOutputKeys() {
+    SendMessageW(app.outputChoice, CB_RESETCONTENT, 0, 0);
+    for (const unsigned vk : morse::availableOutputKeys(app.settings)) {
+        const auto name = outputKeyLabel(vk);
+        const auto index = SendMessageW(app.outputChoice, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(name.c_str()));
+        SendMessageW(app.outputChoice, CB_SETITEMDATA, WPARAM(index), LPARAM(vk));
+        if (vk == app.settings.outputKey) SendMessageW(app.outputChoice, CB_SETCURSEL, WPARAM(index), 0);
+    }
+    app.outputKey = app.settings.outputKey;
+    app.signal();
+    InvalidateRect(app.window, nullptr, FALSE);
 }
 
 void workerMain() {
     SerialPort serial;
     morse::FrameParser parser;
-    morse::Bridge bridge([](bool down) { return app.demo || sendSpace(down); });
+    morse::KeyboardOutput keyboard;
+    unsigned activeKey = app.outputKey.load();
+    morse::Bridge bridge([&](bool down) { return app.demo || keyboard.send(activeKey, down); });
     Snapshot state; state.demo = app.demo;
     std::vector<PortInfo> candidates;
     size_t candidate = 0;
@@ -306,6 +323,8 @@ void workerMain() {
         previousForeground = foreground;
         bridge.block(!app.demo && (ownWindow || !foreground || app.suspended || app.locked));
         bridge.enable(app.enabled);
+        const unsigned requestedKey = app.outputKey.load();
+        if (requestedKey != activeKey && bridge.prepareOutputChange()) activeKey = requestedKey;
         state.ownWindow = ownWindow;
         if (revision != app.revision.load()) {
             revision = app.revision.load(); disconnect(); candidates.clear(); candidate = 0; nextScan = 0;
@@ -333,7 +352,7 @@ void workerMain() {
         } else {
             if (accepted && now - bridge.lastSeen >= morse::Bridge::timeoutMs) {
                 disconnect(); state.status = L"Verbindung verloren";
-                state.detail = L"Keine gültige Meldung seit 1 s. Space freigegeben; suche erneut ...";
+                state.detail = L"Keine gültige Meldung seit 1 s. Ausgabetaste freigegeben; suche erneut ...";
                 nextScan = now + 1000;
             }
             if (!serial.isOpen() && now >= nextScan) {
@@ -358,7 +377,7 @@ void workerMain() {
                     const int result = serial.read(bytes);
                     if (result < 0) {
                         disconnect(); state.status = L"USB-Verbindung unterbrochen";
-                        state.detail = L"Space freigegeben. Automatische Wiederverbindung läuft ...";
+                        state.detail = L"Ausgabetaste freigegeben. Automatische Wiederverbindung läuft ...";
                         nextScan = now + 1000; break;
                     }
                     if (result == 0) break;
@@ -401,6 +420,7 @@ void workerMain() {
         while (state.edges.size() > 2048) state.edges.pop_front();
         state.connected = bridge.connected; state.physical = bridge.physicalDown;
         state.output = bridge.outputDown; state.enabled = bridge.enabled; state.armed = bridge.armed;
+        state.outputKey = activeKey;
         state.fault = bridge.fault; state.lastPacket = bridge.lastSeen;
         if (now - lastPublish >= 16) { app.publish(state); lastPublish = now; }
         HANDLE events[2] = {app.wake, serial.ov.hEvent};
@@ -421,7 +441,7 @@ void createFonts() {
     };
     app.font = make(14, FW_NORMAL); app.titleFont = make(29, FW_SEMIBOLD);
     app.labelFont = make(12, FW_SEMIBOLD); app.stateFont = make(25, FW_SEMIBOLD);
-    for (HWND control : {app.combo, app.refresh, app.pause, app.top, app.close, app.audioCheck, app.frequency})
+    for (HWND control : {app.combo, app.refresh, app.pause, app.top, app.close, app.audioCheck, app.frequency, app.outputChoice})
         if (control) SendMessageW(control, WM_SETFONT, reinterpret_cast<WPARAM>(app.font), TRUE);
 }
 void layout() {
@@ -438,6 +458,8 @@ void layout() {
     move(app.audioCheck, w - 307, 26, 140, 28);
     move(app.frequency, w - 160, 26, 66, 28);
     move(app.spin, w - 94, 26, 18, 28);
+    const int cw = (w-68)/2, right = 42+cw;
+    move(app.outputChoice, right+92, 248, cw-108, 220);
 }
 
 void fillRect(HDC dc, RECT rect, COLORREF color) {
@@ -466,7 +488,7 @@ void drawUi(HDC dc, int width, int height) {
     fillRect(dc, {0,0,width,height}, BG);
     text(L"MorseBridge", 26, 19, w-355, 38, app.titleFont, INK);
     text(L"Hz", w-68, 26, 34, 28, app.font, MUTED);
-    text(s.demo ? L"DEMO · Vorschau ohne Tastaturausgabe" : L"Junker M.T.  →  Arduino Nano  →  Leertaste", 28, 59, w-56, 24, app.font, MUTED);
+    text(s.demo ? L"DEMO · Vorschau ohne Tastaturausgabe" : L"Junker M.T.  →  Arduino Nano  →  Tastaturausgabe", 28, 59, w-56, 24, app.font, MUTED);
     card(26, 96, w-52, 126, WHITE);
     text(L"VERBINDUNG", 42, 106, 150, 20, app.labelFont, MUTED);
     text(s.status, 42, 127, w-84, 29, app.stateFont, s.connected ? GREEN : INK);
@@ -477,14 +499,15 @@ void drawUi(HDC dc, int width, int height) {
     text(L"MORSETASTE · KONTAKT", 42, 251, cw-32, 20, app.labelFont, MUTED);
     text(!s.connected ? L"—" : s.physical ? L"Gedrückt" : L"Losgelassen", 42, 276, cw-32, 33, app.stateFont, s.physical ? GREEN : INK);
     text(std::to_wstring(s.presses) + L" Betätigungen · zuletzt " + std::to_wstring(s.lastDuration) + L" ms", 42, 316, cw-32, 20, app.font, MUTED);
-    text(s.demo ? L"SPACE · SIMULATION" : L"SPACE · WINDOWS-AUSGABE", right+16, 251, cw-32, 20, app.labelFont, MUTED);
-    text(s.output ? L"Gehalten" : L"Freigegeben", right+16, 276, cw-32, 33, app.stateFont, s.output ? BLUE : INK);
+    text(s.demo ? L"DEMO" : L"AUSGABE", right+16, 251, 72, 20, app.labelFont, MUTED);
+    text(s.output ? L"Gehalten" : L"Freigegeben", right+16, 282, cw-32, 28, app.stateFont, s.output ? BLUE : INK);
     std::wstring hint = L"Bereit für das aktive Zielfenster";
     if (s.fault) hint = L"Eingabe blockiert · Pause / Fortsetzen";
     else if (!s.enabled) hint = L"Ausgabe pausiert";
     else if (!s.connected) hint = L"Warte auf Nano";
     else if (s.ownWindow && !s.demo) hint = L"Zum Senden das Zielfenster aktivieren";
     else if (!s.armed) hint = L"Morsetaste einmal loslassen";
+    if (s.output && s.outputKey != app.settings.outputKey) hint = L"Noch gehalten: " + outputKeyLabel(s.outputKey);
     text(hint, right+16, 316, cw-32, 20, app.font, s.fault ? ORANGE : MUTED);
 
     const int graphBottom = 504;
@@ -498,7 +521,7 @@ void drawUi(HDC dc, int width, int height) {
         fillRect(dc, rect(x, y0-8, 1, y1-y0+15), BORDER);
     }
     text(L"Kontakt", 42, y0-10, 70, 20, app.font, MUTED);
-    text(L"Space", 42, y1-10, 70, 20, app.font, MUTED);
+    text(L"Ausgabe", 42, y1-10, 70, 20, app.font, MUTED);
     auto drawLane = [&](bool output, int y, COLORREF color) {
         fillRect(dc, rect(x0,y+7,x1-x0,1), BORDER);
         bool down = false;
@@ -555,7 +578,7 @@ void drawUi(HDC dc, int width, int height) {
     if (samples.empty())
         text(L"Warte auf vollständige Kontaktimpulse ...", hx0+12, hy0+12, hx1-hx0-24, 24, app.font, MUTED);
     std::wstring footer = s.demo ? L"Demo aktiv: Der Verlauf ist simuliert; echte Tastaturausgabe ist ausgeschaltet."
-                                 : L"Space geht an das aktive Programm – auch bei minimierter MorseBridge.";
+                                 : outputKeyLabel(app.settings.outputKey) + L" geht an das aktive Programm – auch bei minimierter MorseBridge.";
     if (app.audio.error)
         footer = L"PC-Mithörton deaktiviert · Windows-Audiogerät prüfen (Fehler " +
                  std::to_wstring(app.audio.error.load()) + L").";
@@ -621,6 +644,8 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                 0,0,0,0, hwnd, reinterpret_cast<HMENU>(INT_PTR(id)), GetModuleHandleW(nullptr), nullptr);
         };
         app.combo = control(WC_COMBOBOXW, L"", CBS_DROPDOWNLIST | CBS_OWNERDRAWFIXED | CBS_HASSTRINGS | WS_VSCROLL, ID_PORT);
+        app.outputChoice = control(WC_COMBOBOXW, L"", CBS_DROPDOWNLIST | CBS_OWNERDRAWFIXED | CBS_HASSTRINGS | WS_VSCROLL, ID_OUTPUT_KEY);
+        refreshOutputKeys();
         app.refresh = control(WC_BUTTONW, L"Neu suchen", BS_PUSHBUTTON, ID_REFRESH);
         app.pause = control(WC_BUTTONW, L"Ausgabe pausieren", BS_PUSHBUTTON, ID_PAUSE);
         app.top = control(WC_BUTTONW, L"Immer im Vordergrund", BS_AUTOCHECKBOX, ID_TOP);
@@ -634,7 +659,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         SendMessageW(app.spin, UDM_SETPOS32, 0, app.settings.frequency);
         SetWindowTextW(app.frequency,std::to_wstring(app.settings.frequency).c_str());
         app.audio.frequency=app.settings.frequency;
-        for (HWND child : {app.combo,app.refresh,app.pause,app.top,app.close,app.audioCheck,app.frequency,app.spin})
+        for (HWND child : {app.combo,app.refresh,app.pause,app.top,app.close,app.audioCheck,app.frequency,app.spin,app.outputChoice})
             app.theme.attach(child);
         createFonts(); layout();
         applyAppearance(app.settings.theme);
@@ -660,6 +685,15 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         syncControls(app.readSnapshot()); InvalidateRect(hwnd, nullptr, FALSE); return 0;
     case WM_COMMAND:
         switch (LOWORD(wParam)) {
+        case ID_OUTPUT_KEY:
+            if (HIWORD(wParam) == CBN_SELCHANGE) {
+                const auto index = SendMessageW(app.outputChoice, CB_GETCURSEL, 0, 0);
+                const auto vk = SendMessageW(app.outputChoice, CB_GETITEMDATA, WPARAM(index), 0);
+                if (vk != CB_ERR && morse::findOutputKey(unsigned(vk))) {
+                    app.settings.outputKey = unsigned(vk);
+                    app.outputKey = unsigned(vk); app.signal(); persistSettings();
+                }
+            } break;
         case ID_PORT:
             if (HIWORD(wParam) == CBN_SELCHANGE) {
                 const int index = int(SendMessageW(app.combo, CB_GETCURSEL, 0, 0));
@@ -757,7 +791,7 @@ bool saveWindowPng(const std::wstring& path) {
     drawUi(dc,rc.right,rc.bottom);
     // Paint child HWNDs in CLIENT coordinates. WM_PRINT on the top-level window
     // also includes non-client offsets; PrintWindow may fail for hidden windows.
-    for (HWND control : {app.combo,app.refresh,app.pause,app.top,app.close,app.audioCheck,app.frequency,app.spin}) {
+    for (HWND control : {app.combo,app.refresh,app.pause,app.top,app.close,app.audioCheck,app.frequency,app.spin,app.outputChoice}) {
         RECT child{}; GetWindowRect(control,&child);
         MapWindowPoints(HWND_DESKTOP,app.window,reinterpret_cast<POINT*>(&child),2);
         const int saved = SaveDC(dc);
@@ -809,6 +843,44 @@ int renderTests(const std::wstring& directory) {
         Gdiplus::GdiplusShutdown(token); DestroyWindow(app.window); return 4;
     }
     bool ok = saveWindowPng(directory+L"\\gui-suche.png");
+    ok = SendMessageW(app.outputChoice,CB_GETCOUNT,0,0)==2 && app.settings.outputKey==morse::spaceKey && ok;
+    auto selectOutput = [&](int index) {
+        SendMessageW(app.outputChoice,CB_SETCURSEL,WPARAM(index),0);
+        SendMessageW(app.window,WM_COMMAND,MAKEWPARAM(ID_OUTPUT_KEY,CBN_SELCHANGE),reinterpret_cast<LPARAM>(app.outputChoice));
+    };
+    selectOutput(1);
+    ok = app.settings.outputKey==morse::leftCtrlKey && app.outputKey==morse::leftCtrlKey && ok;
+    openShell(DialogKind::Settings);
+    SetWindowTextW(shell.keyEntry,L"F1");
+    SendMessageW(app.dialog,WM_COMMAND,ID_KEY_ADD,0);
+    SendMessageW(app.dialog,WM_COMMAND,ID_KEY_ADD,0);
+    SetWindowTextW(shell.keyEntry,L"CTRL+A");
+    SendMessageW(app.dialog,WM_COMMAND,ID_KEY_ADD,0);
+    ok = shell.draft.customOutputKeys==std::vector<unsigned>{VK_F1} && app.settings.customOutputKeys.empty() && ok;
+    closeShell(false);
+    ok = app.settings.customOutputKeys.empty() && app.settings.outputKey==morse::leftCtrlKey && ok;
+    openShell(DialogKind::Settings);
+    SetWindowTextW(shell.keyEntry,L"F1");
+    SendMessageW(app.dialog,WM_COMMAND,ID_KEY_ADD,0);
+    SetWindowTextW(shell.keyEntry,L"Right CTRL");
+    SendMessageW(app.dialog,WM_COMMAND,ID_KEY_ADD,0);
+    closeShell(true);
+    ok = SendMessageW(app.outputChoice,CB_GETCOUNT,0,0)==4 && ok;
+    selectOutput(2);
+    ok = app.settings.outputKey==VK_F1 && app.outputKey==VK_F1 && ok;
+    openShell(DialogKind::Settings);
+    SendMessageW(shell.keyList,CB_SETCURSEL,0,0);
+    SendMessageW(app.dialog,WM_COMMAND,ID_KEY_REMOVE,0);
+    ok = shell.draft.outputKey==morse::spaceKey && ok;
+    closeShell(false);
+    ok = app.settings.outputKey==VK_F1 && app.settings.customOutputKeys.size()==2 && ok;
+    openShell(DialogKind::Settings);
+    SendMessageW(shell.keyList,CB_SETCURSEL,0,0);
+    SendMessageW(app.dialog,WM_COMMAND,ID_KEY_REMOVE,0);
+    closeShell(true);
+    ok = app.settings.outputKey==morse::spaceKey && app.outputKey==morse::spaceKey &&
+         app.settings.customOutputKeys==std::vector<unsigned>{VK_RCONTROL} && ok;
+    selectOutput(1);
     ok = !app.audio.enabled && app.audio.frequency == 650 && ok;
     for (const unsigned hz : {400u, 650u, 1000u}) {
         SetWindowTextW(app.frequency, std::to_wstring(hz).c_str());
@@ -825,6 +897,7 @@ int renderTests(const std::wstring& directory) {
     SendMessageW(app.window, WM_COMMAND, ID_AUDIO, 0);
     ok = app.audio.enabled && ok;
     state.demo = true; state.connected = true; state.physical = true; state.output = true; state.armed = true;
+    state.outputKey = morse::leftCtrlKey;
     state.status = L"Demo · Nano verbunden · COM5"; state.detail = L"Vorschau · keine echte Tastaturausgabe";
     state.port = L"COM5"; state.presses = 12; state.lastDuration = 124;
     const uint64_t now = GetTickCount64();
@@ -861,6 +934,12 @@ int renderTests(const std::wstring& directory) {
             ok=saveWindowPng(directory+L"\\theme-"+name+L"-"+std::to_wstring(dpi)+L".png") && ok;
             ok=app.revision==revision && app.audio.frequency==frequency && !app.audio.enabled && ok;
         }
+        openShell(DialogKind::Settings);
+        RECT dialogBounds{0,0,MulDiv(554,int(dpi),96),MulDiv(448,int(dpi),96)};
+        AdjustWindowRectExForDpi(&dialogBounds,WS_POPUP | WS_CAPTION | WS_SYSMENU,FALSE,WS_EX_CONTROLPARENT,dpi);
+        SendMessageW(app.dialog,WM_DPICHANGED,MAKEWPARAM(dpi,dpi),reinterpret_cast<LPARAM>(&dialogBounds));
+        ok=saveCompleteWindowPng(app.dialog,directory+L"\\settings-dpi-"+std::to_wstring(dpi)+L".png") && ok;
+        closeShell(false);
     }
     RECT bounds{0,0,800,908}; AdjustWindowRectExForDpi(&bounds,WS_OVERLAPPEDWINDOW,TRUE,0,96);
     SendMessageW(app.window,WM_DPICHANGED,MAKEWPARAM(96,96),reinterpret_cast<LPARAM>(&bounds));
@@ -897,6 +976,7 @@ int renderTests(const std::wstring& directory) {
     openShell(DialogKind::Update); closeShell(false);
     ok=(GetMenuState(GetMenu(app.window),ID_UPDATE,MF_BYCOMMAND) & MF_GRAYED)==0 && ok;
     app.settings.theme=morse::ThemeId::System; applyAppearance(app.settings.theme);
+    app.settings.customOutputKeys.clear(); app.settings.outputKey=morse::spaceKey; refreshOutputKeys();
     Gdiplus::GdiplusShutdown(token);
     // Smoke-test the real background thread and the actual window commands.
     // Demo mode guarantees that no serial port or system keyboard is touched.

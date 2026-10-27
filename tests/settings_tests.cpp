@@ -11,7 +11,8 @@ void require(bool condition, const char* name) {
     if (!condition) { std::cerr << "FAIL: " << name << '\n'; std::exit(1); }
 }
 bool defaults(const morse::Settings& value) {
-    return value.theme == morse::ThemeId::System && value.frequency == 650;
+    return value.theme == morse::ThemeId::System && value.frequency == 650 &&
+        value.outputKey == morse::spaceKey && value.customOutputKeys.empty();
 }
 }
 int main() {
@@ -41,7 +42,68 @@ int main() {
     require(defaults(parseSettings(serializeSettings({static_cast<ThemeId>(99), 1}))), "invalid in-memory values are sanitized before saving");
     const auto saved = serializeSettings({ThemeId::Dark, 650});
     require(saved.find("Audio") == std::string::npos && saved.find("COM") == std::string::npos && saved.find("Topmost") == std::string::npos,
-            "only appearance and frequency are persisted");
+            "session-only audio COM and topmost states are not persisted");
+    require(availableOutputKeys({}) == std::vector<unsigned>({spaceKey,leftCtrlKey}),
+            "first-run dropdown contains exactly SPACE and Left CTRL");
+    const auto legacy = parseSettings("[MorseBridge]\nTheme=dark\nFrequency=700\n");
+    require(legacy.theme == ThemeId::Dark && legacy.frequency == 700 && legacy.outputKey == spaceKey &&
+            legacy.customOutputKeys.empty(), "old INI retains theme and frequency and defaults output to SPACE");
+    Settings custom;
+    require(addCustomOutputKey(custom,0x70) && addCustomOutputKey(custom,0xA3) && addCustomOutputKey(custom,0x41),
+            "function modifier and letter keys can be added in user order");
+    require(!addCustomOutputKey(custom,0x70) && !addCustomOutputKey(custom,spaceKey) &&
+            !addCustomOutputKey(custom,leftCtrlKey) && !addCustomOutputKey(custom,0),
+            "duplicates defaults and unsupported virtual keys are rejected");
+    require(availableOutputKeys(custom) == std::vector<unsigned>({spaceKey,leftCtrlKey,0x70,0xA3,0x41}),
+            "custom dropdown follows permanent defaults in insertion order");
+    custom.outputKey = 0xA3;
+    const auto encodedCustom = serializeSettings(custom);
+    require(encodedCustom.find("OutputKey=Right CTRL\nCustomOutputKeys=F1;Right CTRL;A\n") != std::string::npos,
+            "selection and list are serialized with stable readable names");
+    const auto decodedCustom = parseSettings(encodedCustom);
+    require(decodedCustom.outputKey == custom.outputKey && decodedCustom.customOutputKeys == custom.customOutputKeys,
+            "selection and ordered custom list survive round trip");
+    const auto reordered = parseSettings("[MorseBridge]\nOutputKey= f1 \nCustomOutputKeys= a ; F1 ; right ctrl \n");
+    require(reordered.outputKey == 0x70 && reordered.customOutputKeys == std::vector<unsigned>({0x41,0x70,0xA3}),
+            "selection before list plus name casing and spacing are supported");
+    const auto damaged = parseSettings("[MorseBridge]\nOutputKey=F2\nCustomOutputKeys=SPACE;Left CTRL;;bogus;F1;f1;Right CTRL;CTRL+A;999;F25;\n");
+    require(damaged.outputKey == spaceKey && damaged.customOutputKeys == std::vector<unsigned>({0x70,0xA3}),
+            "malformed list drops unsupported and duplicate entries and unavailable selection falls back to SPACE");
+    require(parseSettings("[MorseBridge]\nOutputKey=LEFT CTRL\n").outputKey == leftCtrlKey,
+            "Left CTRL is selectable without being a custom entry");
+    require(defaults(parseSettings("[MorseBridge]\nOutputKey=CTRL+A\n[Other]\nCustomOutputKeys=F1\nOutputKey=F1\n")),
+            "unsupported combinations and foreign output settings cannot alter defaults");
+    removeCustomOutputKey(custom,0x70);
+    require(custom.outputKey == 0xA3 && custom.customOutputKeys == std::vector<unsigned>({0xA3,0x41}),
+            "removing another key preserves active choice and remaining order");
+    removeCustomOutputKey(custom,0xA3);
+    require(custom.outputKey == spaceKey && custom.customOutputKeys == std::vector<unsigned>({0x41}),
+            "removing active custom key returns selection to SPACE");
+    custom.outputKey = leftCtrlKey;
+    removeCustomOutputKey(custom,leftCtrlKey);
+    require(custom.outputKey == leftCtrlKey, "permanent defaults cannot be removed");
+    Settings bounded;
+    for (const auto& key : supportedOutputKeys()) addCustomOutputKey(bounded,key.vk);
+    require(bounded.customOutputKeys.size() == maxCustomOutputKeys &&
+            availableOutputKeys(bounded).size() == maxCustomOutputKeys + 2,
+            "custom list is limited to 32 keys");
+    std::string oversizedList = "[MorseBridge]\nCustomOutputKeys=";
+    for (const auto& key : supportedOutputKeys()) { oversizedList += key.name; oversizedList += ';'; }
+    require(parseSettings(oversizedList).customOutputKeys == bounded.customOutputKeys,
+            "persisted list limit keeps first valid unique keys in order");
+    Settings unsanitized;
+    unsanitized.customOutputKeys = {0,spaceKey,0x70,0x70,leftCtrlKey,9999,0x41};
+    unsanitized.outputKey = 0x71;
+    const auto sanitized = parseSettings(serializeSettings(unsanitized));
+    require(sanitized.customOutputKeys == std::vector<unsigned>({0x70,0x41}) && sanitized.outputKey == spaceKey,
+            "saving sanitizes invalid in-memory custom list and selection");
+    for (const auto& key : supportedOutputKeys()) {
+        require(findOutputKey(key.vk) == &key && parseOutputKey(key.name) == &key,
+                "supported names and key identities are unique and reversible");
+        require(key.vk > 0 && key.vk < 255, "supported identifiers fit Windows virtual-key range");
+    }
+    for (const auto* invalid : {"", "CTRL", "SHIFT", "ALT", "Left WIN", "PAUSE", "PRINTSCREEN", "F0", "A+B", "0x20"})
+        require(!parseOutputKey(invalid), "ambiguous unsupported and compound key names are rejected");
     const auto automaticLight = paletteFor(ThemeId::System, false, false);
     const auto automaticDark = paletteFor(ThemeId::System, true, false);
     require(!automaticLight.dark && automaticDark.dark && automaticLight.background != automaticDark.background,
@@ -63,6 +125,11 @@ int main() {
     require(saveSettings(path, {ThemeId::Matrix, 1000}), "atomic replacement overwrites an existing settings file");
     loaded = loadSettings(path);
     require(loaded.theme == ThemeId::Matrix && loaded.frequency == 1000, "replacement values survive restart");
+    custom.outputKey = 0x41;
+    require(saveSettings(path,custom), "custom list and active key save to existing settings file");
+    loaded = loadSettings(path);
+    require(loaded.customOutputKeys == custom.customOutputKeys && loaded.outputKey == 0x41,
+            "custom list and selected key survive a settings file restart");
     {
         std::ofstream oversized(path, std::ios::binary | std::ios::trunc);
         oversized << std::string(16385, 'x');

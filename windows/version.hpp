@@ -3,8 +3,8 @@
 
 // Single source of truth for the application, resources and release scripts.
 #define MB_VERSION_MAJOR 1
-#define MB_VERSION_MINOR 2
-#define MB_VERSION_PATCH 2
+#define MB_VERSION_MINOR 3
+#define MB_VERSION_PATCH 0
 #define MB_STRINGIFY_IMPL(value) #value
 #define MB_STRINGIFY(value) MB_STRINGIFY_IMPL(value)
 #define MB_WIDEN_IMPL(value) L##value

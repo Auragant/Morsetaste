@@ -1,8 +1,18 @@
-MORSEBRIDGE 1.2.2 – JUNKER M.T. / ARDUINO NANO / WINDOWS
+MORSEBRIDGE 1.3.0 – TASTKONTAKT / ARDUINO NANO / WINDOWS
+
+   Am 27.10.2026 nach allgemein erfolgreichem parallelem Nutzertest vom
+   Eigentümer zur Veröffentlichung freigegeben. Einzelne Prüfpunkte wurden
+   damit nicht gesondert bestätigt; Details: docs/USER_TEST_1.3.0.md.
+   MorseBridge setzt einen potentialfreien Schließerkontakt über einen Arduino
+   Nano in das Drücken/Loslassen einer einzelnen Taste am Windows-PC um.
+   Geeignet sind z. B. eine gerade Morsetaste, ein Taster oder ein Fußtaster.
+   Der Nano meldet sich als COM-Port; für die PC-Tastaturausgabe muss die
+   Windows-App laufen.
 
 1. ANSCHLIESSEN
-   Beide potentialfreien Schaltkontakte der Junker an D2 und GND des Nano.
-   Die Morsetaste dabei von Sender/Funkgerät und fremden Spannungen trennen.
+   Die beiden Anschlüsse des potentialfreien Schließerkontakts an D2 und GND
+   des Nano anschließen. Den Kontakt dabei von Sender/Funkgerät und anderen
+   Spannungsquellen trennen; keine Fremdspannung an D2 anlegen.
    Nano per USB-Datenkabel an den PC anschließen.
 
 2. NANO PROGRAMMIEREN
@@ -16,19 +26,29 @@ MORSEBRIDGE 1.2.2 – JUNKER M.T. / ARDUINO NANO / WINDOWS
 3. WINDOWS-PROGRAMM STARTEN
    dist/MorseBridge.exe starten. Keine Installation nötig.
    Auf „Nano verbunden · COM…“ warten.
-   Morsetaste loslassen, dann das gewünschte Zielprogramm anklicken.
-   Morsetaste drücken hält Space; Loslassen gibt Space frei.
+   Ausgabetaste im Hauptfenster wählen: SPACE oder Left CTRL (linke Strg-Taste).
+   Tastkontakt öffnen, dann das gewünschte Zielprogramm anklicken.
+   Kontakt schließen hält die gewählte PC-Taste; Öffnen gibt sie frei.
 
 OPTIONALER SUMMER (AKTIV, Z. B. TMB12A05)
    Ein/Aus-Schalter zwischen D4 und GND: geschlossen = Mithörton freigegeben.
-   Der Ton erklingt dann nur bei gedrückter Junker-Taste.
-   Offen oder kein Schalter = stumm. Die Space-Funktion bleibt immer erhalten.
+   Der Ton erklingt dann nur bei geschlossenem Tastkontakt an D2.
+   Offen oder kein Schalter = stumm. Die PC-Tastaturausgabe ist davon unabhängig.
    D8 steuert den Summer über einen BC337 mit 1-kOhm-Basiswiderstand,
    10-kOhm-Basis-Pulldown und Schutzdiode. Versorgung aus 5V, nicht aus D8!
    Genaue Verdrahtung: docs/SUMMER.md.
    Die PC-Pause beeinflusst den lokalen Ton nicht; zum Stummschalten D4 öffnen.
 
 BEDIENUNG
+   Das Drop-down der Ausgabetaste enthält SPACE, Left CTRL und eigene Einträge.
+   „Optionen → Einstellungen“: weitere Einzeltasten eingeben/auswählen und
+   „Hinzufügen“ drücken, z. B. F1, A, Right CTRL oder ENTER. Höchstens 32 eigene
+   Tasten; gültige Namen stehen in der Auswahlliste. Keine Tastenkombinationen.
+   „Entfernen“ löscht den markierten eigenen Eintrag. „OK“ übernimmt die Liste
+   ins Hauptfenster; „Abbrechen“ verwirft Änderungen. Wird die aktive Zusatztaste
+   entfernt, wechselt die Ausgabe bei OK auf SPACE. Beide Standardtasten bleiben.
+   Beim Tastenwechsel wird die alte Taste zuerst freigegeben. Vor dem nächsten
+   Impuls den Tastkontakt öffnen. Auswahl und eigene Liste bleiben gespeichert.
    Histogramm: letzte 5 Minuten, nur RAM; Impulse über 1 Sekunde ausgeschlossen.
    „PC-Mithörton“ oben rechts: Sinuston über Windows, zunächst ausgeschaltet.
    Frequenz standardmäßig 650 Hz; Zähler/Zahleneingabe von 400 bis 1000 Hz.
@@ -42,8 +62,8 @@ BEDIENUNG
    „Immer im Vordergrund“ hält die Anzeige über dem Zielfenster sichtbar.
    Strg + Alt + F12 oder die Pause-Schaltfläche pausiert/setzt die Ausgabe fort.
    Im eigenen MorseBridge-Fenster wird nur der Kontakt angezeigt.
-   Nach Fortsetzen oder einem Fensterwechsel während des Tastens zuerst loslassen.
-   X oder „Schließen“ gibt Space frei und beendet das Programm vollständig.
+   Nach Fortsetzen oder einem Fensterwechsel bei geschlossenem Kontakt zuerst öffnen.
+   X oder „Schließen“ gibt die gehaltene PC-Taste frei und beendet das Programm vollständig.
    Menü „Datei → Beenden“ schließt ebenfalls vollständig.
    „Hilfe → Über MorseBridge“ zeigt Version, Build-Zeit (UTC) und GitHub-Link.
    „Hilfe → Nach Updates suchen“ prüft manuell stabile GitHub-Releases und
@@ -52,8 +72,10 @@ BEDIENUNG
    „Optionen → Einstellungen“: System, Hell, Dunkel, Mitternacht, Amber, Matrix.
    Auswahl zeigt Vorschau; „OK“ speichert, „Abbrechen“ stellt alten Zustand her.
    System folgt dem hellen/dunklen Windows-App-Modus.
-   Farbschema und Frequenz: %LOCALAPPDATA%\MorseBridge\settings.ini.
-   Ohne gültige Einstellungen: System und 650 Hz.
+   Farbschema, Frequenz, Ausgabetaste und eigene Liste:
+   %LOCALAPPDATA%\MorseBridge\settings.ini.
+   Ohne gültige Einstellungen: System, 650 Hz, SPACE und leere Zusatzliste.
+   Bestehende Einstellungen aus 1.2.2 bleiben kompatibel.
    COM-Auswahl, Pause und „Immer im Vordergrund“ gelten nur für die Sitzung.
 
 OHNE NANO AUSPROBIEREN
@@ -71,5 +93,10 @@ Eigener Code: GPLv3 (LICENSE). Fremdlizenzen: THIRD_PARTY_NOTICES.md / licenses/
 Repository: https://github.com/Auragant/Morsetaste
 Der Eigentümer hat frühere Praxistests der Junker/Nano/Summer-Kombination und
 der PC-Audioausgabe von 1.2.1 bestätigt. Den 1.2.2-Stand hat er am 04.10.2026
-freigegeben. Umfang und Grenzen der Prüfungen stehen in TESTING.md.
+freigegeben. Den parallelen Test von 1.3.0 hat er am 27.10.2026 allgemein als
+erfolgreich bewertet und die Veröffentlichung freigegeben. Veröffentlicht wird
+dieselbe getestete EXE; das Paket wird nur für die Dokumentation neu erstellt.
+SHA-256 der EXE:
+2f461e4f581b02203b42da7db092e10c99e142cd943348ff94bde327003b4973
+Umfang und Grenzen der Prüfungen stehen in TESTING.md.
 Firmware bleibt unverändert; für dieses Windows-Update ist kein Flashen nötig.

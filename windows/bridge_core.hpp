@@ -107,6 +107,13 @@ public:
         // Retry failed key-up; never claim it was released when SendInput failed.
         if (outputDown && (fault || !enabled || blocked || !connected)) release();
     }
+    // Change the caller's output identity only after this succeeds. If key-up
+    // fails, keep the old identity for retries and require a release to rearm.
+    bool prepareOutputChange() {
+        armed = false;
+        release();
+        return !outputDown;
+    }
     void release() {
         if (!outputDown) return;
         if (send_(false)) outputDown = false;

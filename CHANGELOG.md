@@ -1,5 +1,29 @@
 # Änderungen
 
+## 1.3.0 – 27.10.2026
+
+- Dokumentation auf potentialfreie Tast- und Schaltkontakte verallgemeinert,
+  etwa Direkt-Keys, Taster und Fußtaster. Historische Nachweise benennen weiterhin
+  den tatsächlich getesteten Aufbau.
+- Drop-down für die PC-Ausgabetaste im Hauptfenster. SPACE bleibt Standard;
+  Left CTRL bezeichnet eindeutig die linke Strg-Taste.
+- Unter „Optionen → Einstellungen“ bis zu 32 eigene Einzeltasten hinzufügen
+  und entfernen, etwa F1, A, Right CTRL oder Navigationstasten. Die vollständige
+  Namensliste steht im Auswahlfeld; ungültige und doppelte Einträge werden
+  abgewiesen. Tastenkombinationen sind nicht vorgesehen.
+- „OK“ übernimmt die eigene Liste in das Hauptfenster, „Abbrechen“ verwirft
+  Änderungen. Entfernen der aktiven Zusatztaste setzt die Ausgabe auf SPACE.
+  Die beiden Standardtasten bleiben immer verfügbar.
+- Eigene Liste und gewählte Ausgabetaste werden zusammen mit Farbschema und
+  Frequenz in der lokalen Einstellungsdatei gespeichert. Einstellungen aus
+  1.2.2 bleiben kompatibel; fehlende oder ungültige Tastenauswahl ergibt SPACE.
+- Beim Wechsel der Ausgabetaste wird die zuvor gehaltene Taste zuerst
+  freigegeben. Die neue Ausgabe wartet auf das Öffnen des Eingangskontakts.
+  Der zum Drücken bestimmte Scan-Code wird auch zum Loslassen verwendet.
+- Firmware und serielles Protokoll bleiben unverändert; kein erneutes Flashen
+  erforderlich. Der Eigentümer hat den parallelen Test am 27.10.2026 als
+  erfolgreich bewertet und die Veröffentlichung derselben getesteten EXE freigegeben.
+
 ## 1.2.2 – 04.10.2026
 
 - Eigenes App-Icon: Leertaste mit Morseimpulsen, eingebettet für EXE,

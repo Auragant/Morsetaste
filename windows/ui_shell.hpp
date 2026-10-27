@@ -11,6 +11,8 @@ struct ShellState {
     UINT dpi = 96;
     int defaultId = IDCANCEL;
     HWND choice = nullptr, status = nullptr, release = nullptr, close = nullptr;
+    HWND keyEntry = nullptr, keyList = nullptr, keyAdd = nullptr, keyRemove = nullptr;
+    morse::Settings draft;
     HFONT font = nullptr, title = nullptr;
     struct Control { HWND window; int x,y,w,h; bool heading; };
     std::vector<Control> controls;
@@ -168,7 +170,12 @@ void closeShell(bool accept) {
     if (!window) return;
     const bool wasForeground = GetForegroundWindow() == window;
     if (shell.kind == DialogKind::Settings) {
-        if (accept) { app.settings.theme=app.displayTheme; persistSettings(); }
+        if (accept) {
+            app.settings.theme=app.displayTheme;
+            app.settings.customOutputKeys=shell.draft.customOutputKeys;
+            app.settings.outputKey=shell.draft.outputKey;
+            refreshOutputKeys(); persistSettings();
+        }
         else applyAppearance(shell.previous);
     } else if (shell.kind == DialogKind::Update) {
         app.updates.shutdown();
@@ -202,6 +209,45 @@ bool openLink(HWND owner, const wchar_t* url) {
     return false;
 }
 
+void refreshCustomKeyList(int preferred = -1) {
+    SendMessageW(shell.keyList,CB_RESETCONTENT,0,0);
+    for (const unsigned key : shell.draft.customOutputKeys) {
+        const auto name=outputKeyLabel(key);
+        SendMessageW(shell.keyList,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(name.c_str()));
+    }
+    const bool any=!shell.draft.customOutputKeys.empty();
+    if (any) {
+        const int last=int(shell.draft.customOutputKeys.size())-1;
+        SendMessageW(shell.keyList,CB_SETCURSEL,WPARAM(preferred<0 ? last : std::min(preferred,last)),0);
+    } else {
+        SendMessageW(shell.keyList,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(L"Noch keine zusätzlichen Tasten"));
+        SendMessageW(shell.keyList,CB_SETCURSEL,0,0);
+    }
+    EnableWindow(shell.keyList,any); EnableWindow(shell.keyRemove,any);
+}
+
+void addCustomKeyFromControl() {
+    wchar_t value[64]{}; GetWindowTextW(shell.keyEntry,value,64);
+    std::string name;
+    for (const wchar_t c : value) {
+        if (!c) break;
+        if (c>127) { name.clear(); break; }
+        name.push_back(char(c));
+    }
+    const auto* key=morse::parseOutputKey(name);
+    if (!key) {
+        SetWindowTextW(shell.status,L"Unbekannte Taste. Bitte einen Namen aus der Auswahlliste verwenden.");
+    } else if (key->vk==morse::spaceKey || key->vk==morse::leftCtrlKey ||
+               std::find(shell.draft.customOutputKeys.begin(),shell.draft.customOutputKeys.end(),key->vk)!=shell.draft.customOutputKeys.end()) {
+        SetWindowTextW(shell.status,L"Diese Taste steht bereits im Hauptfenster zur Auswahl.");
+    } else if (!morse::addCustomOutputKey(shell.draft,key->vk)) {
+        SetWindowTextW(shell.status,L"Es sind höchstens 32 zusätzliche Tasten möglich.");
+    } else {
+        refreshCustomKeyList();
+        SetWindowTextW(shell.status,L"Taste hinzugefügt. Mit OK wird die Liste übernommen.");
+    }
+}
+
 LRESULT CALLBACK shellProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam) {
     switch (message) {
     case DM_GETDEFID: return MAKELRESULT(shell.defaultId,DC_HASDEFID);
@@ -230,15 +276,34 @@ LRESULT CALLBACK shellProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam) {
             for (const wchar_t* name : {L"System",L"Hell",L"Dunkel",L"Mitternacht",L"Amber",L"Matrix"})
                 SendMessageW(shell.choice,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(name));
             SendMessageW(shell.choice,CB_SETCURSEL,WPARAM(app.displayTheme),0);
-            control(WC_STATICW,L"Die Tonhöhe im Hauptfenster wird ebenfalls gespeichert.\nCOM-Suche startet automatisch; Ton und Vordergrund starten aus.",SS_LEFT,0,24,108,506,48);
-            shell.status=control(WC_STATICW,L"",SS_LEFT,0,24,158,506,38);
-            control(WC_BUTTONW,L"&OK",WS_TABSTOP | BS_DEFPUSHBUTTON,IDOK,300,207,106,32);
-            shell.close=control(WC_BUTTONW,L"&Abbrechen",WS_TABSTOP | BS_PUSHBUTTON,IDCANCEL,422,207,108,32);
+            control(WC_STATICW,L"Zusätzliche Ausgabetasten",SS_LEFT,0,24,109,506,24);
+            control(WC_STATICW,L"SPACE und Left CTRL sind immer verfügbar. Einzelne Tasten,\nz. B. F1, A oder Right CTRL; keine Tastenkombinationen.",SS_LEFT,0,24,138,506,44);
+            control(WC_STATICW,L"&Neue Taste",SS_LEFT,0,24,191,112,24);
+            shell.keyEntry=control(WC_COMBOBOXW,L"",WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWN | CBS_OWNERDRAWFIXED | CBS_HASSTRINGS,
+                                   ID_CUSTOM_KEY,142,187,250,240);
+            SendMessageW(shell.keyEntry,CB_LIMITTEXT,32,0);
+            for (const auto& key : morse::supportedOutputKeys()) {
+                const auto name=outputKeyLabel(key.vk);
+                SendMessageW(shell.keyEntry,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(name.c_str()));
+            }
+            SetWindowTextW(shell.keyEntry,L"F1");
+            COMBOBOXINFO keyInfo{}; keyInfo.cbSize=sizeof(keyInfo);
+            if (GetComboBoxInfo(shell.keyEntry,&keyInfo)) app.theme.attach(keyInfo.hwndItem);
+            shell.keyAdd=control(WC_BUTTONW,L"&Hinzufügen",WS_TABSTOP | BS_PUSHBUTTON,ID_KEY_ADD,406,186,124,32);
+            control(WC_STATICW,L"Eigene &Liste",SS_LEFT,0,24,238,112,24);
+            shell.keyList=control(WC_COMBOBOXW,L"",WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWNLIST | CBS_OWNERDRAWFIXED | CBS_HASSTRINGS,
+                                  ID_KEY_LIST,142,234,250,240);
+            shell.keyRemove=control(WC_BUTTONW,L"&Entfernen",WS_TABSTOP | BS_PUSHBUTTON,ID_KEY_REMOVE,406,233,124,32);
+            refreshCustomKeyList();
+            shell.status=control(WC_STATICW,L"Mit OK speichern; Abbrechen verwirft die Änderungen.",SS_LEFT,0,24,282,506,42);
+            control(WC_STATICW,L"Tonhöhe und Ausgabetaste werden gespeichert.\nCOM-Suche startet automatisch; Ton und Vordergrund starten aus.",SS_LEFT,0,24,332,506,44);
+            control(WC_BUTTONW,L"&OK",WS_TABSTOP | BS_DEFPUSHBUTTON,IDOK,300,394,106,32);
+            shell.close=control(WC_BUTTONW,L"&Abbrechen",WS_TABSTOP | BS_PUSHBUTTON,IDCANCEL,422,394,108,32);
         } else if (shell.kind == DialogKind::About) {
             control(WC_STATICW,L"MorseBridge",SS_LEFT,0,24,18,500,32,true);
             const std::wstring info=L"Version " MB_VERSION_WSTRING L"\nBuild (UTC): " MB_BUILD_UTC_WSTRING;
             control(WC_STATICW,info.c_str(),SS_LEFT,0,24,68,506,48);
-            control(WC_STATICW,L"Junker M.T. → Arduino Nano → Leertaste\nEin Hobbyprojekt von Auragant · GPLv3\nMit Unterstützung von LLM/KI erstellt.",SS_LEFT,0,24,128,506,70);
+            control(WC_STATICW,L"Junker M.T. → Arduino Nano → Ausgabetaste\nEin Hobbyprojekt von Auragant · GPLv3\nMit Unterstützung von LLM/KI erstellt.",SS_LEFT,0,24,128,506,70);
             control(WC_LINK,L"<a>github.com/Auragant/Morsetaste</a>",WS_TABSTOP | LWS_TRANSPARENT,ID_GITHUB,24,213,506,26);
             control(WC_BUTTONW,L"&GitHub öffnen",WS_TABSTOP | BS_PUSHBUTTON,ID_GITHUB,24,258,148,34);
             control(WC_BUTTONW,L"Nach &Updates suchen",WS_TABSTOP | BS_PUSHBUTTON,ID_UPDATE,184,258,194,34);
@@ -260,6 +325,20 @@ LRESULT CALLBACK shellProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam) {
                 const LRESULT selected=SendMessageW(shell.choice,CB_GETCURSEL,0,0);
                 if (selected>=0 && selected<=5) applyAppearance(static_cast<morse::ThemeId>(selected));
             } return 0;
+        case ID_KEY_ADD: addCustomKeyFromControl(); return 0;
+        case ID_KEY_REMOVE: {
+            const LRESULT selected=SendMessageW(shell.keyList,CB_GETCURSEL,0,0);
+            if (selected>=0 && size_t(selected)<shell.draft.customOutputKeys.size()) {
+                const unsigned key=shell.draft.customOutputKeys[size_t(selected)];
+                const bool active=key==shell.draft.outputKey;
+                morse::removeCustomOutputKey(shell.draft,key);
+                refreshCustomKeyList(int(selected));
+                SetWindowTextW(shell.status,active
+                    ? L"Aktive Taste entfernt. Mit OK wird SPACE als Ausgabe gewählt."
+                    : L"Taste entfernt. Mit OK wird die Liste übernommen.");
+            }
+            return 0;
+        }
         case IDOK: closeShell(true); return 0;
         case IDCANCEL: closeShell(false); return 0;
         case ID_GITHUB: openLink(hwnd,L"https://github.com/Auragant/Morsetaste"); return 0;
@@ -317,13 +396,15 @@ LRESULT CALLBACK shellProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam) {
 void openShell(DialogKind kind) {
     if (app.dialog) { SetForegroundWindow(app.dialog); return; }
     shell.kind=kind; shell.previous=app.displayTheme; shell.controls.clear();
+    shell.draft=app.settings;
     shell.defaultId=kind==DialogKind::Settings ? IDOK : IDCANCEL;
     shell.choice=nullptr; shell.status=nullptr; shell.release=nullptr; shell.close=nullptr;
+    shell.keyEntry=nullptr; shell.keyList=nullptr; shell.keyAdd=nullptr; shell.keyRemove=nullptr;
     const DWORD style=WS_POPUP | WS_CAPTION | WS_SYSMENU;
     // A dialog modal frame hides the caption icon; owner disabling below keeps
     // these windows modal while a standard frame displays the application icon.
     const DWORD ex=WS_EX_CONTROLPARENT;
-    RECT size{0,0,app.scale(554),app.scale(kind==DialogKind::Settings ? 260 : kind==DialogKind::About ? 320 : 272)};
+    RECT size{0,0,app.scale(554),app.scale(kind==DialogKind::Settings ? 448 : kind==DialogKind::About ? 320 : 272)};
     AdjustWindowRectExForDpi(&size,style,FALSE,ex,app.dpi);
     RECT owner{}; GetWindowRect(app.window,&owner);
     const int width=size.right-size.left, height=size.bottom-size.top;

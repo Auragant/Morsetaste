@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "../windows/bridge_core.hpp"
+#ifdef _WIN32
+#include "../windows/keyboard_output.hpp"
+#endif
 #include <cstdlib>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 int checks = 0;
@@ -121,5 +125,136 @@ int main() {
         fail = false; b.tick(6); require(!b.outputDown,"retry failed key-up");
         require(accepted == std::vector<bool>({true,false}),"only owned down/up pair");
     }
+    {
+        unsigned activeKey = 32;
+        std::vector<std::pair<unsigned, bool>> events;
+        Bridge b([&](bool down) { events.emplace_back(activeKey, down); return true; });
+        b.receive(false, 0); b.receive(true, 1);
+        if (b.prepareOutputChange()) activeKey = 0xa2;
+        require(activeKey == 0xa2 && !b.outputDown && !b.armed,
+                "key change releases old output and disarms held contact");
+        require(events == std::vector<std::pair<unsigned, bool>>({{32, true}, {32, false}}),
+                "key change releases the old key before changing identity");
+        b.receive(true, 2);
+        require(events.size() == 2, "held contact cannot press the newly selected key");
+        b.receive(false, 3); b.receive(true, 4); b.receive(false, 5);
+        require(events == std::vector<std::pair<unsigned, bool>>(
+                    {{32, true}, {32, false}, {0xa2, true}, {0xa2, false}}),
+                "new output key works only after contact release");
+        require(b.prepareOutputChange() && !b.armed,
+                "idle output change also requires a fresh released contact");
+    }
+    {
+        unsigned activeKey = 32;
+        bool failUp = true;
+        std::vector<std::pair<unsigned, bool>> events;
+        Bridge b([&](bool down) {
+            if (!down && failUp) return false;
+            events.emplace_back(activeKey, down);
+            return true;
+        });
+        b.receive(false, 0); b.receive(true, 1);
+        if (b.prepareOutputChange()) activeKey = 0xa2;
+        require(activeKey == 32 && b.outputDown && b.fault && !b.armed,
+                "failed change key-up retains old output identity and ownership");
+        b.receive(true, 2); b.tick(3);
+        require(events.size() == 1 && activeKey == 32,
+                "failed key-up never presses requested replacement key");
+        failUp = false;
+        if (b.prepareOutputChange()) activeKey = 0xa2;
+        require(activeKey == 0xa2 && !b.outputDown && events.back() == std::make_pair(32u, false),
+                "retry releases original key before replacement becomes active");
+        b.enable(false); b.enable(true); b.receive(true, 4);
+        require(events.size() == 2, "fault reset with held contact does not press replacement");
+        b.receive(false, 5); b.receive(true, 6); b.disconnect();
+        require(events == std::vector<std::pair<unsigned, bool>>(
+                    {{32, true}, {32, false}, {0xa2, true}, {0xa2, false}}),
+                "replacement down/up pair follows successful fault reset and release");
+    }
+#ifdef _WIN32
+    {
+        std::vector<INPUT> events;
+        unsigned mapCalls = 0;
+        morse::KeyboardOutput output([&](const INPUT& input) { events.push_back(input); return true; },
+            [&](unsigned vk) {
+                ++mapCalls;
+                if (vk == VK_SPACE) return 0x39u;
+                if (vk == VK_LCONTROL) return 0x1du;
+                if (vk == VK_RCONTROL) return 0xe01du;
+                return 0u;
+            });
+        require(output.send(VK_SPACE, false) && events.empty(), "adapter emits no unowned key-up");
+        require(output.send(VK_SPACE, true), "adapter accepts SPACE down");
+        require(events.size() == 1 && events.back().type == INPUT_KEYBOARD &&
+                events.back().ki.wVk == 0 && events.back().ki.wScan == 0x39 &&
+                events.back().ki.dwFlags == KEYEVENTF_SCANCODE,
+                "SPACE uses one scan-code key-down event");
+        require(!output.send(VK_LCONTROL, true) && events.size() == 1 && mapCalls == 1,
+                "adapter rejects a second down while it owns a key");
+        require(output.send(VK_LCONTROL, false) && events.size() == 2 && mapCalls == 1 &&
+                events.back().ki.wScan == 0x39 &&
+                events.back().ki.dwFlags == (KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP),
+                "key-up retains owned scan code even when requested virtual key changed");
+        require(output.send(VK_SPACE, false) && events.size() == 2,
+                "duplicate key-up creates no event");
+        require(output.send(VK_LCONTROL, true) && events.back().ki.wScan == 0x1d &&
+                events.back().ki.dwFlags == KEYEVENTF_SCANCODE,
+                "Left CTRL is the non-extended control scan code");
+        require(output.send(VK_LCONTROL, false) &&
+                events.back().ki.dwFlags == (KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP),
+                "Left CTRL release is non-extended");
+        require(output.send(VK_RCONTROL, true) && events.back().ki.wScan == 0x1d &&
+                events.back().ki.dwFlags == (KEYEVENTF_SCANCODE | KEYEVENTF_EXTENDEDKEY),
+                "Right CTRL preserves E0 extended flag");
+        require(output.send(VK_RCONTROL, false) && events.back().ki.wScan == 0x1d &&
+                events.back().ki.dwFlags == (KEYEVENTF_SCANCODE | KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP),
+                "Right CTRL release preserves E0 extended flag");
+    }
+    {
+        bool fail = true;
+        unsigned mapping = 0xe01d, mapCalls = 0;
+        std::vector<INPUT> attempts;
+        morse::KeyboardOutput output([&](const INPUT& input) { attempts.push_back(input); return !fail; },
+            [&](unsigned) { ++mapCalls; return mapping; });
+        require(!output.send(VK_RCONTROL, true) && attempts.size() == 1,
+                "failed injected down does not gain ownership");
+        require(output.send(VK_RCONTROL, false) && attempts.size() == 1,
+                "failed down never causes unsolicited release");
+        fail = false;
+        require(output.send(VK_RCONTROL, true), "down retries after failed emission");
+        mapping = 0x2a; fail = true;
+        require(!output.send(VK_LCONTROL, false) && attempts.back().ki.wScan == 0x1d &&
+                attempts.back().ki.dwFlags == (KEYEVENTF_SCANCODE | KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP),
+                "failed release uses original scan and extended flag after layout change");
+        const auto attemptCount = attempts.size();
+        require(!output.send(VK_LCONTROL, true) && attempts.size() == attemptCount && mapCalls == 2,
+                "failed release retains ownership and blocks a new down");
+        fail = false;
+        require(output.send(VK_LCONTROL, false) && mapCalls == 2 &&
+                attempts.back().ki.wScan == 0x1d &&
+                attempts.back().ki.dwFlags == (KEYEVENTF_SCANCODE | KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP),
+                "successful retry still releases original layout identity");
+        require(output.send(VK_LCONTROL, true) && mapCalls == 3 && attempts.back().ki.wScan == 0x2a &&
+                attempts.back().ki.dwFlags == KEYEVENTF_SCANCODE,
+                "fresh down uses new layout mapping after successful release");
+        require(output.send(VK_LCONTROL, false), "new layout key is released");
+    }
+    {
+        unsigned mapping = 0, emitCalls = 0, mapCalls = 0;
+        morse::KeyboardOutput output([&](const INPUT&) { ++emitCalls; return true; },
+            [&](unsigned) { ++mapCalls; return mapping; });
+        require(!output.send(VK_PAUSE, true), "unmapped virtual key is rejected");
+        mapping = 0xe11d;
+        require(!output.send(VK_PAUSE, true), "E1 multi-byte mapping is rejected");
+        mapping = 0xe000;
+        require(!output.send(VK_PAUSE, true), "zero scan code with E0 prefix is rejected");
+        mapping = 0xe21d;
+        require(!output.send(VK_PAUSE, true), "unsupported mapping prefix is rejected");
+        require(!output.send(0, true) && !output.send(0x100, true) && mapCalls == 4 && emitCalls == 0,
+                "invalid virtual keys never reach mapping or emission");
+        require(output.send(VK_PAUSE, false) && emitCalls == 0,
+                "rejected mappings create no owned key to release");
+    }
+#endif
     std::cout << "PASS: " << checks << " protocol / output checks\n";
 }

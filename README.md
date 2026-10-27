@@ -1,8 +1,13 @@
-# MorseBridge – Junker M.T. → Space
+# MorseBridge – Tastkontakt → PC-Taste
 
-Version **1.2.2** – Menüleiste, manuelle Updateprüfung, Themes und App-Icon.
-Der Eigentümer hat diesen Stand am 04.10.2026 freigegeben; veröffentlicht wird
-dieselbe getestete EXE. Testumfang und Prüfgrenzen stehen in
+Version **1.3.0** – wählbare Ausgabetaste und eigene Tastenliste.
+Der Eigentümer hat den parallelen Test am 27.10.2026 als erfolgreich bewertet
+und die Veröffentlichung freigegeben. Veröffentlicht wird dieselbe getestete EXE.
+[Release-Notizen](docs/releases/v1.3.0.md) · [Nutzertest 1.3.0](docs/USER_TEST_1.3.0.md).
+
+Der bisherige Stand **1.2.2** brachte Menüleiste, manuelle Updateprüfung, Themes
+und App-Icon. Der Eigentümer hat ihn am 04.10.2026 freigegeben; die Freigabe gilt
+für die damalige getestete EXE. Testumfang und Prüfgrenzen stehen in
 [TESTING.md](TESTING.md) und [User-Test 1.2.2](docs/USER_TEST_1.2.2.md).
 Version **1.2.1** samt Release, Downloads und Git-Historie bleibt erhalten.
 Seit 1.2.1 entfällt der bisherige Zusatz `p`.
@@ -13,9 +18,13 @@ Den PC-Mithörton in **1.2.0p ausgeschaltet lassen** und auf die aktuelle Versio
 Die WASAPI-Ausgabe von 1.2.1 wurde vom Eigentümer am optischen Windows-Ausgang
 erfolgreich getestet. Binärdownloads aus Versionen vor 1.2.1 wurden zurückgezogen.
 
-Die Junker-Morsetaste steuert über einen Arduino Nano mit ATmega328P und CH340C
-die Leertaste des aktiven Windows-Programms. Die kleine C++-Anwendung läuft auch
-im Hintergrund oder minimiert. Fenster schließen beendet sie vollständig.
+MorseBridge setzt einen **potentialfreien Tast- oder Schaltkontakt** über einen
+Arduino Nano mit ATmega328P und CH340C in eine wählbare Taste des aktiven
+Windows-Programms um; standardmäßig die Leertaste. Geeignet sind beispielsweise
+gerade Morsetasten (Direkt-Keys), Taster und Fußtaster mit einem potentialfreien
+Schließerkontakt. Kontakt schließen hält die gewählte PC-Taste, Kontakt öffnen
+gibt sie frei. Die kleine C++-Anwendung läuft auch im Hintergrund oder minimiert.
+Fenster schließen beendet sie vollständig.
 
 Projekt: [Auragant/Morsetaste](https://github.com/Auragant/Morsetaste) ·
 [Fertige Programme / Releases](https://github.com/Auragant/Morsetaste/releases/latest).
@@ -30,9 +39,10 @@ Eigener Code: **GPLv3**; [Lizenz](LICENSE) und
 
 ## Schnellstart
 
-1. Die **beiden potentialfreien Schaltkontakte** der Junker mit **D2** und **GND**
-   am Nano verbinden. Polung egal. Den Nano per USB-Datenkabel anschließen.
-   Die Morsetaste dabei von Funkgerät, Sender und anderen Spannungsquellen trennen.
+1. Die **beiden Anschlüsse des potentialfreien Schließerkontakts** mit **D2** und
+   **GND** am Nano verbinden. Polung egal. Den Nano per USB-Datenkabel anschließen.
+   Den Kontakt dabei von anderen Geräten und externen Spannungsquellen trennen,
+   bei einer Morsetaste beispielsweise von Funkgerät oder Sender.
 2. `firmware/JunkerSpace/JunkerSpace.ino` in der Arduino IDE öffnen.
    Board **Arduino Nano**, Prozessor **ATmega328P**, passenden COM-Port auswählen
    und hochladen. Bei Synchronisationsfehlern **ATmega328P (Old Bootloader)** versuchen.
@@ -40,15 +50,17 @@ Eigener Code: **GPLv3**; [Lizenz](LICENSE) und
 3. Seriellen Monitor und andere Programme schließen, die den COM-Port belegen.
 4. **`dist/MorseBridge.exe`** starten. Die EXE benötigt keine Installation,
    kein Python, kein .NET und keine separat installierte C++-Laufzeit.
-5. Auf **„Nano verbunden · COM…“** warten. Morsetaste einmal loslassen,
-   dann das gewünschte Morseprogramm aktivieren. Taste drücken = Space halten;
-   Taste loslassen = Space freigeben.
+5. Auf **„Nano verbunden · COM…“** warten und im Hauptfenster die Ausgabetaste
+   auswählen: **SPACE** oder **Left CTRL** (linke Strg-Taste). Weitere Tasten lassen
+   sich unter „Optionen → Einstellungen“ ergänzen. Den Kontakt einmal öffnen,
+   dann das gewünschte Zielprogramm aktivieren. Kontakt schließen hält die
+   gewählte PC-Taste; Kontakt öffnen gibt sie frei.
 
 ```text
-Junker-Kontakt 1 ───── D2   Arduino Nano
-Junker-Kontakt 2 ───── GND  ATmega328P / CH340C
-                            │ USB
-                            └──── Windows-PC / MorseBridge.exe
+Kontaktanschluss 1 ─── D2   Arduino Nano
+Kontaktanschluss 2 ─── GND  ATmega328P / CH340C
+                           │ USB
+                           └──── Windows-PC / MorseBridge.exe
 ```
 
 Der interne Pull-up ist aktiviert. Ein zusätzlicher Widerstand ist bei kurzen
@@ -59,12 +71,13 @@ der USB-Chip selbst meldet sich weiterhin als COM-Port an.
 ## Optionaler aktiver Summer
 
 Ab Version **1.1**: Ein Schalter zwischen **D4 und GND** gibt den Mithörton frei.
-Geschlossen = Ton beim Drücken der Junker; offen oder nicht angeschlossen = stumm.
+Freigabeschalter geschlossen = Ton bei geschlossenem Eingangskontakt;
+Freigabeschalter offen oder nicht angeschlossen = stumm.
 **D8** schaltet einen aktiven 5-V-Summer über eine Transistorstufe. Für den
 **TMB12A05** sind Verdrahtung und Bauteile im [Summer-Anschlussplan](docs/SUMMER.md)
 beschrieben; ihn nicht direkt aus einem Nano-Ausgang versorgen.
 
-Die Space-Funktion bleibt unverändert. Der Ton folgt lokal dem Kontakt und
+Der Ton folgt lokal dem Kontakt und
 funktioniert auch ohne PC-Programm. Die Pause-Schaltfläche der Windows-App
 pausiert ausschließlich die Tastaturausgabe; der Hardwareschalter schaltet den Ton.
 
@@ -72,11 +85,18 @@ pausiert ausschließlich die Tastaturausgabe; der Hardwareschalter schaltet den 
 
 - **Verbindung:** automatisch erkannter Nano und COM-Port. Bei Bedarf im
   Auswahlfeld einen vorhandenen COM-Port manuell wählen und „Neu suchen“ drücken.
-- **Morsetaste:** entprellter Kontakt, Anzahl der Betätigungen und Dauer des
-  letzten Impulses. Die angezeigte Dauer wird am PC gemessen, nicht im Nano.
-- **Space:** Zustand der von Windows angenommenen künstlichen Tasteneingabe.
+- **Eingangskontakt (Anzeige „Morsetaste“):** entprellter Kontakt, Anzahl der
+  Betätigungen und Dauer des letzten Impulses. Die angezeigte Dauer wird am PC
+  gemessen, nicht im Nano.
+- **Ausgabetaste:** Drop-down im Hauptfenster mit **SPACE**, **Left CTRL** und der
+  eigenen Tastenliste. Die Auswahl wird sofort übernommen und lokal gespeichert.
+  Beim Wechsel wird eine gehaltene alte Taste zuerst freigegeben; die neue Taste
+  wird erst nach dem Öffnen des Eingangskontakts für den nächsten Impuls scharfgestellt.
+  Die Ausgabe verwendet den zum Tastendruck passenden Scan-Code des aktiven
+  Tastaturlayouts und denselben Code zum Loslassen.
+- **Windows-Ausgabe:** Zustand der von Windows angenommenen künstlichen Tasteneingabe.
   Das Zielprogramm kann künstliche Eingaben trotzdem ignorieren.
-- **Live-Verlauf:** Kontakt und Space der letzten acht Sekunden; im hellen
+- **Live-Verlauf:** Kontakt und Tastaturausgabe der letzten acht Sekunden; im hellen
   Standard-Farbschema grün und blau, in den übrigen Themes passend eingefärbt.
 - **Impulslängen:** Dynamisches Histogramm der vollständigen Kontaktimpulse aus den
   letzten fünf Minuten, auch bei pausierter Ausgabe. Normalerweise 5-ms-Klassen;
@@ -92,18 +112,18 @@ pausiert ausschließlich die Tastaturausgabe; der Hardwareschalter schaltet den 
   wird beim Verlassen des Felds oder normalen Beenden lokal gespeichert.
   Der PC-Mithörton ist beim Start ausgeschaltet; das Häkchen gilt nur für die
   laufende Sitzung. Der Ton folgt dem Kontakt, auch
-  im eigenen Fenster, im Hintergrund und bei pausierter Space-Ausgabe. Abbruch,
+  im eigenen Fenster, im Hintergrund und bei pausierter Tastaturausgabe. Abbruch,
   Sperre, Standby und Beenden stoppen ihn. Lautstärke über Windows steuern.
   USB-, Windows- und Audiogeräte-Latenz beeinflussen den hörbaren Zeitpunkt.
   Ab 1.2.1 erfolgt die Ausgabe mit WASAPI im gemeinsam genutzten Windows-Modus,
   im Format des Standardgeräts und mit dessen Puffertakt. Audiofehler schalten
   den PC-Mithörton ab; erneutes Einschalten versucht den Gerätezugriff erneut.
-- **Ausgabe pausieren:** gibt Space frei; Kontakt und Verlauf werden weiter angezeigt.
+- **Ausgabe pausieren:** gibt die gehaltene Ausgabetaste frei; Kontakt und Verlauf werden weiter angezeigt.
   **Strg + Alt + F12** schaltet die Pause auch im Hintergrund um. Ist diese
   Tastenkombination schon belegt, bleibt die Schaltfläche verfügbar.
 - **Immer im Vordergrund:** Anzeige bleibt sichtbar, ohne den Fokus beim
   Tastendrücken zu übernehmen. Funktioniert auch bei aktiviertem Zielfenster.
-- **Schließen / X:** gibt ein von der App gehaltenes Space frei und beendet die App.
+- **Schließen / X:** gibt die von der App gehaltene Ausgabetaste frei und beendet die App.
   Kein Tray-Prozess und kein Windows-Dienst bleiben zurück.
 - **Menüleiste:** „Datei → Beenden“ schließt die Anwendung.
   „Hilfe → Über MorseBridge“ zeigt Version, Build-Zeitpunkt in UTC und GitHub-Link.
@@ -111,9 +131,24 @@ pausiert ausschließlich die Tastaturausgabe; der Hardwareschalter schaltet den 
   Mitternacht, Amber und Matrix**. Eine Auswahl wird sofort als Vorschau sichtbar;
   „OK“ speichert sie, „Abbrechen“ stellt das vorherige Farbschema wieder her.
   **System** folgt automatisch dem hellen/dunklen Windows-App-Modus.
-- **Lokal gespeichert:** Farbschema und gültige Frequenz liegen in
+- **Eigene Tastenliste:** Im selben Einstellungsdialog einen Namen eingeben oder
+  aus der Liste wählen und „Hinzufügen“ drücken. Unterstützt werden einzelne
+  Buchstaben **A–Z**, Ziffern **0–9**, **F1–F24**, linke/rechte **CTRL**, **SHIFT**
+  und **ALT**, Navigationstasten und die aufgeführten NUMPAD-Tasten. Beispiele:
+  `F1`, `A`, `Right CTRL`, `ENTER`, `PAGE DOWN`, `NUMPAD 0`. Die Auswahlliste zeigt
+  alle unterstützten Namen. Tastenkombinationen und doppelte Einträge werden
+  nicht übernommen; höchstens **32** eigene Tasten. „Entfernen“ löscht den
+  markierten Eintrag. „OK“ übernimmt die Liste in das Hauptfenster;
+  „Abbrechen“ verwirft die Änderungen. Wird die aktive Zusatztaste entfernt,
+  wechselt die Ausgabe bei „OK“ auf **SPACE**. SPACE und Left CTRL bleiben verfügbar.
+- **Lokal gespeichert:** Farbschema, gültige Frequenz, eigene Tastenliste und
+  gewählte Ausgabetaste liegen in
   `%LOCALAPPDATA%\MorseBridge\settings.ini`, unabhängig vom EXE-Ordner.
-  Ohne gültige Datei startet die App mit System und 650 Hz. COM-Auswahl,
+  Die Liste wird als `CustomOutputKeys=F1;Right CTRL;A` und die Auswahl etwa als
+  `OutputKey=F1` gespeichert. Ohne gültige Datei startet die App mit System,
+  650 Hz, SPACE und leerer Zusatzliste. Bestehende Dateien aus 1.2.2 funktionieren
+  weiterhin; ungültige oder nicht verfügbare Ausgabetasten fallen auf SPACE zurück.
+  COM-Auswahl,
   Ausgabe-Pause, Mithörton-Häkchen und „Immer im Vordergrund“ sind Sitzungseinstellungen.
 - **Updates:** „Hilfe → Nach Updates suchen“ fragt manuell den neuesten stabilen
   Release von **Auragant/Morsetaste** ab. Währenddessen bleibt die App bedienbar.
@@ -123,9 +158,9 @@ pausiert ausschließlich die Tastaturausgabe; der Hardwareschalter schaltet den 
   automatische Installation. Ohne Internet bleiben alle lokalen Funktionen nutzbar.
 
 Solange MorseBridge selbst das aktive Fenster ist, wird nur der Kontakt angezeigt;
-es wird kein Space an die eigenen Bedienelemente gesendet. Für die Ausgabe das
+es wird keine Ausgabetaste an die eigenen Bedienelemente gesendet. Für die Ausgabe das
 Zielfenster anklicken. Nach Verbindung, Fortsetzen oder Fensterwechsel während
-eines Impulses muss die Morsetaste losgelassen werden, bevor ein neuer Impuls
+eines Impulses muss der Eingangskontakt geöffnet werden, bevor ein neuer Impuls
 gesendet wird. Eine gehaltene Taste wird dabei nicht ungewollt neu gedrückt.
 
 USB-Abziehen, Ausbleiben gültiger Meldungen für **1 Sekunde**, Windows-Sperre
@@ -140,8 +175,8 @@ werden weder COM-Ports geöffnet noch echte Tastendrücke erzeugt.
 Der PC-Mithörton kann auch in der Demo aktiviert werden.
 
 Für isolierte lokale UI-Prüfungen steht `--ui-test <Einstellungsdatei>` bereit.
-Dieser Modus simuliert den Nano und die Updateantwort (Version 1.2.3), verwendet
-nur die angegebene Datei und erzeugt keine echte Space-Ausgabe. Die simulierte
+Dieser Modus simuliert den Nano und die Updateantwort (Version 1.3.1), verwendet
+nur die angegebene Datei und erzeugt keine echte Tastaturausgabe. Die simulierte
 Updateanzeige ist keine Aussage über eine veröffentlichte Version.
 
 ## Wenn etwas nicht funktioniert
@@ -152,8 +187,9 @@ Updateanzeige ist keine Aussage über eine veröffentlichte Version.
 - **COM-Port belegt:** Arduino-Seriellmonitor bzw. andere serielle Anwendung schließen.
   Zum erneuten Hochladen MorseBridge vollständig schließen; Pause allein lässt
   den COM-Port geöffnet.
-- **Keine JunkerSpace-Firmware:** der Port existiert, aber die eindeutige Kennung
-  fehlt. Sketch hochladen; nach dem Öffnen können bis zu 4,5 Sekunden vergehen.
+- **Keine passende Firmware:** der Port existiert, aber die eindeutige Kennung
+  fehlt. Den mitgelieferten Sketch `JunkerSpace` hochladen; nach dem Öffnen können
+  bis zu 4,5 Sekunden vergehen.
 - **Andere CH340-Geräte:** die automatische Suche öffnet deren Ports ebenfalls.
   Dabei kann DTR einen Reset auslösen. Für einen solchen Aufbau den Nano-Port
   gezielt manuell wählen. Die App sendet keine seriellen Befehle an diese Geräte.
@@ -265,7 +301,7 @@ GitHub-Issue. Prüfungen, Grenzen und E-Mail-Einstellungen:
 [SECURITY.md](SECURITY.md).
 
 [Rechtliche Vorprüfung und Veröffentlichungs-Checkliste](docs/PUBLICATION_REVIEW.md).
-Das Komplettpaket `MorseBridge-1.2.2-win64.zip` enthält zusätzlich
+Das Komplettpaket `MorseBridge-1.3.0-win64.zip` enthält zusätzlich
 die verwendeten Arduino-Core-Quellen und vollständigen Lizenzhinweise.
 Das Projekt wird unter dem GitHub-Alias **Auragant** veröffentlicht; es nennt
 keine persönliche Kontaktadresse des Projektverantwortlichen.

@@ -1,5 +1,62 @@
 # Prüfstand
 
+## Version 1.3.0 – 27.10.2026
+
+Die neue Tastenauswahl ist lokal gebaut und geprüft. Der Eigentümer hat den
+parallelen Test am 27.10.2026 als erfolgreich bewertet und die Veröffentlichung
+freigegeben. Diese allgemeine Abnahme bestätigt einzelne Hardware-, Freigabe-,
+Standby- oder Monitorwechselszenarien nicht zusätzlich. Veröffentlicht wird die
+unveränderte getestete EXE mit der unten dokumentierten SHA-256.
+
+- Windows-Produktionsbuild (MinGW-w64, C++17, Warnungen als Fehler) erfolgreich.
+  **814 Prüfungen bestanden:** 119 Kern-/Ausgabe-, 16 Sinus-, 150 Audioformat-/Puffer-,
+  30 Audio-Thread-, 37 Firmware-, 184 Versions-/Update- und 278 Einstellungsprüfungen.
+- Neue Ausgabeprüfungen testen den Wechsel während eines gehaltenen Impulses,
+  die Freigabe der alten Taste vor Übernahme der neuen Auswahl, fehlgeschlagene
+  Key-downs/Key-ups und die unveränderte Scan-Code-/Extended-Identität bei
+  Layoutwechseln. Windows-Ereignisse werden dabei durch einen Testsender abgefangen;
+  es werden keine echten Tastendrücke erzeugt.
+- Zusätzlicher lokaler Test des echten Windows-Tastenmappers: Alle 96 angebotenen
+  Tasten konnten in passende Down-/Up-Scan-Code-Ereignisse umgesetzt werden.
+  Auch dieser Test verwendete einen Testsender ohne `SendInput`-Aufruf.
+- Einstellungsprüfungen decken alte INI-Dateien, Liste und aktive Auswahl nach
+  erneutem Laden, ungültige/mehrfache Einträge, die Grenze von 32 Zusatztasten,
+  Entfernen der aktiven Taste und nicht schreibbare Speicherorte ab.
+- GUI-/Demo-Worker-Test bestanden: SPACE/Left CTRL auswählen, Zusatztasten
+  hinzufügen, doppelte/ungültige Einträge ablehnen, eigene Taste auswählen,
+  Entfernen mit Abbrechen bzw. OK und Rückfall auf SPACE. Theme-Vorschau,
+  Updateanzeige mit simuliertem Transport, Pause/Fortsetzen und vollständiges
+  Beenden wurden ebenfalls geprüft. Keine COM-Zugriffe oder echte Tastaturausgabe.
+- Bildexporte des Hauptfensters für sechs Themes bei 100/150/200 % Skalierung
+  sowie des erweiterten Einstellungsdialogs bei diesen drei Skalierungen geprüft.
+  Das Ausgabedropdown und der Text im editierbaren Tastenfeld sind sichtbar;
+  die synthetische Skalierung ersetzt keinen praktischen Monitorwechsel.
+- Anschließend wurden nur EXE-Beschreibung und Manifesttext auf „PC-Taste“
+  aktualisiert. Der abschließende Build und GUI-/Worker-Test dieser EXE bestanden.
+- Firmware und Protokoll sind unverändert. Für das lokale Komplettpaket wird
+  die unveränderte HEX aus dem 1.2.2-Bestand übernommen; SHA-256 und Sketch wurden
+  mit dem vorhandenen Bestand verglichen. Kein erneuter AVR-Build und kein Flashen.
+
+SHA-256 der abschließend lokal geprüften EXE:
+
+```text
+2f461e4f581b02203b42da7db092e10c99e142cd943348ff94bde327003b4973
+```
+
+Build-Zeitpunkt: `2026-10-27T17:04:42Z` (UTC).
+Quellbasis: `c8ae798` plus die lokalen Änderungen für 1.3.0; diese Änderungen
+sind noch nicht als Git-Commit festgehalten. Der Paketbau übernimmt die getestete
+EXE unverändert und legt die zugehörigen aktuellen Quellen bei.
+
+Einzelne praktische Tests mit dem verwendeten Tastkontakt, Nano und Zielprogramm,
+insbesondere SPACE, Left CTRL, eigene Taste und zuverlässige Freigabe bei Wechsel,
+Pause, USB-Abbruch, Sperre/Standby und Beenden, wurden nicht gesondert bestätigt.
+Vor Veröffentlichung stehen noch die GitHub-Security-, CodeQL- und Windows-/
+Microsoft-SDK-Prüfungen des neuen Stands aus; die historischen grünen 1.2.2-Läufe
+gelten dafür nicht als Nachweis. Ein lokaler MSVC-Build wurde nicht ausgeführt.
+Die Nutzerabnahme und die konkrete Prüfliste stehen in
+[USER_TEST_1.3.0.md](docs/USER_TEST_1.3.0.md).
+
 ## Version 1.2.2 – 04.10.2026
 
 Der Eigentümer hat den lokal bereitgestellten 1.2.2-Stand am 04.10.2026 mit
