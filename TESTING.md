@@ -44,16 +44,25 @@ SHA-256 der abschließend lokal geprüften EXE:
 ```
 
 Build-Zeitpunkt: `2026-10-27T17:04:42Z` (UTC).
-Quellbasis: `c8ae798` plus die lokalen Änderungen für 1.3.0; diese Änderungen
-sind noch nicht als Git-Commit festgehalten. Der Paketbau übernimmt die getestete
-EXE unverändert und legt die zugehörigen aktuellen Quellen bei.
+Quellstand des Laufzeitcodes und der Tests:
+`b4bf02a8941b0f18b69fbf8217006ce30188b96f` (Basis `c8ae798`). Die EXE wurde
+aus demselben Laufzeitquelltext vor dessen Commit gebaut. Anschließende
+Freigabe-/Prüfnachweise ergänzen nur Dokumentation. Der Paketbau übernimmt die
+getestete EXE unverändert und legt die zugehörigen aktuellen Quellen bei.
 
 Einzelne praktische Tests mit dem verwendeten Tastkontakt, Nano und Zielprogramm,
 insbesondere SPACE, Left CTRL, eigene Taste und zuverlässige Freigabe bei Wechsel,
 Pause, USB-Abbruch, Sperre/Standby und Beenden, wurden nicht gesondert bestätigt.
-Vor Veröffentlichung stehen noch die GitHub-Security-, CodeQL- und Windows-/
-Microsoft-SDK-Prüfungen des neuen Stands aus; die historischen grünen 1.2.2-Läufe
-gelten dafür nicht als Nachweis. Ein lokaler MSVC-Build wurde nicht ausgeführt.
+Die GitHub-Prüfungen für den Laufzeit-/Teststand
+`b4bf02a8941b0f18b69fbf8217006ce30188b96f` waren am 27.10.2026 erfolgreich:
+[Security checks](https://github.com/Auragant/Morsetaste/actions/runs/40548697027),
+[CodeQL](https://github.com/Auragant/Morsetaste/actions/runs/40548694219) und
+[Windows compatibility](https://github.com/Auragant/Morsetaste/actions/runs/40548696878).
+Beide Windows-Runner und Microsofts C++-Compiler mit aktuellem Windows-SDK
+bestanden Build, Softwaretests und GUI-/Workerprüfung. Security umfasst
+Cppcheck, den Scan der vollständigen Git-Historie auf Zugangsdaten und Tests
+mit Sanitizern; CodeQL prüfte C/C++, JavaScript/TypeScript und GitHub Actions.
+Ein lokaler MSVC-Build wurde nicht ausgeführt.
 Die Nutzerabnahme und die konkrete Prüfliste stehen in
 [USER_TEST_1.3.0.md](docs/USER_TEST_1.3.0.md).
 

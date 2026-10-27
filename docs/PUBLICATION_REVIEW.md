@@ -130,6 +130,22 @@ EXE sind erneut erforderlich:
 - [x] Paketinhalt, EXE-/Produktversion, Build-Zeitpunkt und Quellenzuordnung prüfen.
 - [x] Tag/Release und Downloads nach Nutzerabnahme und erfolgreichen Prüfungen zur Veröffentlichung freigegeben; Version 1.2.1 bleibt erhalten.
 
+### Zusätzliche Release-Freigabe 1.3.0
+
+- [x] 814 lokale Softwareprüfungen sowie GUI-/Worker-Test bestanden.
+- [x] Allgemein erfolgreicher paralleler Nutzertest und Veröffentlichungsfreigabe
+  des Eigentümers am 27.10.2026 dokumentiert; einzelne praktische Szenarien wurden
+  damit nicht gesondert bestätigt.
+- [x] Security checks, CodeQL und Windows-/Microsoft-SDK-Kompatibilität für
+  `b4bf02a` erfolgreich; Links und Prüfgrenzen in `TESTING.md`.
+- [x] Die getestete EXE mit SHA-256
+  `2f461e4f581b02203b42da7db092e10c99e142cd943348ff94bde327003b4973`
+  bleibt unverändert; der Paketbau übernimmt sie ohne Neubuild.
+- [x] Dokumentation für potentialfreie Tast- und Schaltkontakte verallgemeinert;
+  Quellen, Arduino-Core-/Variant-Quellen, Lizenztexte und Prüfsummen werden beigelegt.
+- [x] Veröffentlichung von Tag, Release und Downloads autorisiert. Bestehende
+  Releases einschließlich 1.2.2 bleiben erhalten.
+
 ### Datenschutz und Meldeweg
 
 Es werden keine persönlichen Kontaktdaten des Projektverantwortlichen als
@@ -153,7 +169,7 @@ kommerzielle Bereitstellung oder Hardwareverteilung erfordert eine neue Prüfung
 
 Ergebnis der früheren Vorprüfung: Die allgemeinen Freigabepunkte für diesen
 nichtkommerziellen Hobbyumfang sind abgearbeitet. Die zusätzlichen technischen
-Freigabepunkte für 1.2.2 sind nach Nutzerabnahme und erfolgreichen GitHub-Prüfungen
+Freigabepunkte für 1.2.2 und 1.3.0 sind nach Nutzerabnahme und erfolgreichen GitHub-Prüfungen
 abgearbeitet. Lizenztexte, LLM-Hinweis und die zugehörigen Quellen sind
 Bestandteil des Release-Pakets. Eine uneingeschränkte rechtliche Unbedenklichkeit
 wird nicht behauptet; kommerzielle Bereitstellung oder Hardwareverteilung
